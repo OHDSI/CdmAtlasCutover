@@ -64,7 +64,7 @@ buildCdmSource <- function(sourceKey, sourceName = NULL, dbms = NULL,
   cdmSource$resultsDatabaseSchema = resultsDatabaseSchema
   cdmSource$vocabDatabaseSchema = vocabDatabaseSchema
   cdmSource$priority = priority
-  return (cdmSource)
+  return(cdmSource)
 }
 
 #' @title removeSources
@@ -79,15 +79,15 @@ buildCdmSource <- function(sourceKey, sourceName = NULL, dbms = NULL,
 #' @param sqlOnly                   Generate SQL only, don't execute
 #' 
 #' @export
-removeCdmSources <- function (repoConnectionDetails, cdmSources, sqlOnly = FALSE)
+removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
 {
-  sourceKeys <- sapply(cdmSources, function (cdmSource) { sourceKey <- cdmSource$sourceKey })
+  sourceKeys <- sapply(cdmSources, function(cdmSource) { sourceKey <- cdmSource$sourceKey })
   sqls <- c()
-  sql <- renderSql(sql = "select source_id from @ohdsiRepositorySchema.source where source_key in (@sourceKeys);", 
+  sql <- SqlRender::renderSql(sql = "select source_id from @ohdsiRepositorySchema.source where source_key in (@sourceKeys);", 
                            ohdsiRepositorySchema = repoConnectionDetails$schema, 
                            sourceKeys = paste0(sprintf("'%s'", sourceKeys), collapse = ","))$sql 
-  connection <- connect(repoConnectionDetails)
-  sourceIds <- querySql(connection = connection, sql = sql)
+  connection <- DatabaseConnector::connect(repoConnectionDetails)
+  sourceIds <- DatabaseConnector::querySql(connection = connection, sql = sql)
 
   if (nrow(sourceIds) == 0)
   {
@@ -98,14 +98,14 @@ removeCdmSources <- function (repoConnectionDetails, cdmSources, sqlOnly = FALSE
                                                    packageName = "CdmAtlasCutover", 
                                                    dbms = repoConnectionDetails$dbms,
                                                    ohdsiRepositorySchema = repoConnectionDetails$schema, 
-                                                   sourceIds = paste(sourceIds, collapse = ","))
+                                                   sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
   sqls <- c(sqls, sql)
 
-  sql <- loadRenderTranslateSql(sqlFilename = "remove_sources.sql", 
+  sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "remove_sources.sql", 
                               packageName = "CdmAtlasCutover", 
                               dbms = repoConnectionDetails$dbms,
                               ohdsiRepositorySchema = repoConnectionDetails$schema,
-                              sourceIds = sourceIds)
+                              sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
 
   sqls <- c(sqls, sql)
   
@@ -115,8 +115,8 @@ removeCdmSources <- function (repoConnectionDetails, cdmSources, sqlOnly = FALSE
   }
   else
   {
-    connection <- connect(repoConnectionDetails)
-    executeSql(connection = connection, sql = paste(sqls, collapse = "\n"))  
+    connection <- DatabaseConnector::connect(repoConnectionDetails)
+    DatabaseConnector::executeSql(connection = connection, sql = paste(sqls, collapse = "\n"))  
     dbDisconnect(connection)
   }
 }
@@ -137,26 +137,26 @@ removeCdmSources <- function (repoConnectionDetails, cdmSources, sqlOnly = FALSE
 #' @param sqlOnly                   Generate SQL only, don't execute
 #' 
 #' @export
-insertCdmSources <- function (repoConnectionDetails, cdmSources, 
+insertCdmSources <- function(repoConnectionDetails, cdmSources, 
                            sourceIdx = FALSE, daimonIdx = FALSE,
                            sqlOnly = FALSE)
 {
-  if ("TRUE" %in% sapply(cdmSources, function (cdmSource) { connectionString <- is.null(cdmSource$connectionString) }))
+  if ("TRUE" %in% sapply(cdmSources, function(cdmSource) { connectionString <- is.null(cdmSource$connectionString) }))
   {
     stop("Connection Strings must be defined for each CDM source object in cdmSources list")   
   }
   
-  getMaxId <- function (repoConnectionDetails, prefix)
+  getMaxId <- function(repoConnectionDetails, prefix)
   {
-    sql <- renderSql(sql = "select max(@prefix_id) from @ohdsiRepositorySchema.@prefix;", 
+    sql <- SqlRender::renderSql(sql = "select max(@prefix_id) from @ohdsiRepositorySchema.@prefix;", 
                      ohdsiRepositorySchema = repoConnectionDetails$schema, prefix = prefix)$sql 
-    connection <- connect(repoConnectionDetails)
+    connection <- DatabaseConnector::connect(repoConnectionDetails)
     newId <- as.numeric(querySql(connection = connection, sql = sql))
-    return (newId)
+    return(newId)
   }
-  updateDaimonPriority <- function (sqls, repoConnectionDetails, cdmSource)
+  updateDaimonPriority <- function(sqls, repoConnectionDetails, cdmSource)
   {
-    sql <- loadRenderTranslateSql(sqlFilename = "update_daimon_priority.sql", 
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "update_daimon_priority.sql", 
                                   packageName = "CdmAtlasCutover", 
                                   dbms = repoConnectionDetails$dbms, 
                                   ohdsiRepositorySchema = repoConnectionDetails$schema)
@@ -317,12 +317,13 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE)
 #' @export
 refreshAtlasSources <- function (webApiUrl, webApiPort, useHttps = FALSE)
 {
+  # TODO: unable to refresh 5-3-17
   tryCatch({
     url <- renderSql(sql = "@protocol://@webApiUrl:@webApiPort/WebAPI/source/refresh", 
                      protocol = ifelse(useHttps, "https", "http"), 
                      webApiUrl = webApiUrl, webApiPort = webApiPort)$sql
-    req <- GET(url)
-    stop_for_status(req)
+    req <- httr::GET(url)
+    httr::stop_for_status(req)
     writeLines("Atlas sources refreshed")
   }, error = function(err) {
     writeLines("Unable to refresh Atlas sources")

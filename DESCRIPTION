@@ -12,7 +12,8 @@ Depends:
 Imports:
     SqlRender,
     DatabaseConnector,
-    stringr
+    stringr,
+    httr
 License: Apache License
 Suggests:
     testthat
