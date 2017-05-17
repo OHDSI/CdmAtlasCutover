@@ -111,6 +111,7 @@ removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
   
   if (sqlOnly)
   {
+    if (!dir.exists("output")) { dir.create("output") }
     SqlRender::writeSql(sql = paste(sqls, collapse = "\n"), targetFile = paste("output", "remove_cdm_sources.sql", sep = "/"))
   }
   else
@@ -234,6 +235,7 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
   
   if (sqlOnly)
   {
+    if (!dir.exists("output")) { dir.create("output") }
     SqlRender::writeSql(sql = paste(sqls, collapse = "\n\n"), targetFile = paste("output", "insert_cdm_sources.sql", sep = "/"))
   }
   else
@@ -290,6 +292,7 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE)
     }
     if (sqlOnly)
     {
+      if (!dir.exists("output")) { dir.create("output") }
       SqlRender::writeSql(sql = finalSql, 
                           targetFile = paste("output", paste0(cdmSource$sourceKey, "~create_ohdsi_results_tables.sql"), sep = "/"))
     }
