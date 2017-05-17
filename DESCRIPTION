@@ -8,8 +8,6 @@ Maintainer: Ajit Londhe <alondhe2@its.jnj.com>
 Description: A package to prepare CDM databases for usage in Atlas by ensuring all cohort results, Heracles, and IR tables are created
   in the Ohdsi Repository Schema. Can also clear Atlas cohort results for a particular CDM source.
 Depends:
-    RJDBC (>= 0.2-5)
-Imports:
     SqlRender,
     DatabaseConnector,
     stringr,
