@@ -12,6 +12,7 @@ This R package is designed to support the management of multiple CDM sources in 
 - Prepare CDM sources for release
   - Create tables in results database schema that Atlas requires
     - Cohort inclusion tables
+    - Cohort feature tables
     - Heracles tables
     - Feasibility tables
     - IR tables
@@ -20,7 +21,7 @@ This R package is designed to support the management of multiple CDM sources in 
   - Specify if source is to be set at high priority
 - Refresh sources in WebAPI to reflect changes in SOURCE and SOURCE_DAIMON
 - Code can be executed through the package or written to SQL files for manual execution
-- Written using OHDSql, so should work in Oracle, Postgres, Redshift, SQL Server, and PDW.
+- Written using OHDSql, so should work in all dialects supported by SqlRender.
 
 ## Examples
 
@@ -48,7 +49,7 @@ insertCdmSources(repoConnectionDetails = repoConnectionDetails, cdmSources = new
                  daimonIdx = TRUE, sqlOnly = TRUE)
 
 ## refresh WebAPI / Atlas sources
-refreshAtlasSources(webApiUrl = "some-webapi-url.com", webApiPort = 8443, useHttps = TRUE)
+refreshAtlasSources(baseUrl = "http://api.ohdsi.org:80/WebAPI")
   
 ```
 
@@ -62,7 +63,7 @@ Requires R.
 
 ## Dependencies
 
-CdmAtlasCutover depends on the OHDSI DatabaseConnector and SqlRender packages as well as the StringR package.
+CdmAtlasCutover depends on the OHDSI DatabaseConnector and SqlRender packages as well as the StringR and HTTR packages from CRAN.
 
 ## Getting Started
 
