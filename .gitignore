@@ -4,3 +4,5 @@
 .Ruserdata
 codeToRun.R
 output/
+test.sql
+errorReport.txt

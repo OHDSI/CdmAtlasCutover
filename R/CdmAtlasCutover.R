@@ -50,9 +50,15 @@
 #'                                     0 = the source will not become the one Atlas uses by default (e.g. to show record counts)
 #' 
 #' @export
-buildCdmSource <- function(sourceKey, sourceName = NULL, dbms = NULL, 
-                           cdmDatabaseSchema = NULL, resultsDatabaseSchema  = NULL, vocabDatabaseSchema = NULL,
-                           connectionString = NULL, sourceId = NULL, priority = 0)
+buildCdmSource <- function(sourceKey, 
+                           sourceName = NULL, 
+                           dbms = NULL, 
+                           cdmDatabaseSchema = NULL, 
+                           resultsDatabaseSchema = NULL, 
+                           vocabDatabaseSchema = NULL,
+                           connectionString = NULL, 
+                           sourceId = NULL, 
+                           priority = 0)
 {
   cdmSource <- {}
   cdmSource$sourceId = sourceId
@@ -205,15 +211,15 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
       
       if (daimonType == 0)
       {
-        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$cdmDatabaseSchema, "' as varchar) as table_qualifier")
+        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$cdmDatabaseSchema, "' as varchar(255)) as table_qualifier")
       }
       else if (daimonType == 1)
       {
-        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$vocabDatabaseSchema, "' as varchar) as table_qualifier")
+        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$vocabDatabaseSchema, "' as varchar(255)) as table_qualifier")
       }
       else
       {
-        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$resultsDatabaseSchema, "' as varchar) as table_qualifier")
+        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$resultsDatabaseSchema, "' as varchar(255)) as table_qualifier")
         
         if (cdmSources[[i]]$priority == 1)
         {
@@ -262,30 +268,32 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE)
 {
   for (cdmSource in cdmSources)
   {
-    sqls <- c()
-    renderedSql <- SqlRender::loadRenderTranslateSql(sqlFilename = "heracles_tables.sql", 
+    sqls <- c(SqlRender::loadRenderTranslateSql(sqlFilename = "heracles_tables.sql", 
                                              packageName = "CdmAtlasCutover", 
                                              dbms = cdmSource$dbms,
-                                             resultsDatabaseSchema = cdmSource$resultsDatabaseSchema)
-    
-    sqls <- c(sqls, renderedSql)
-
-    renderedSql <- SqlRender::loadRenderTranslateSql(sqlFilename = "cohort_inclusion_tables.sql", 
+                                             resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
+              
+              SqlRender::loadRenderTranslateSql(sqlFilename = "cohort_inclusion_tables.sql", 
                                                      packageName = "CdmAtlasCutover",
                                                      dbms = cdmSource$dbms,
-                                                     resultsDatabaseSchema = cdmSource$resultsDatabaseSchema)
-    
-    sqls <- c(sqls, renderedSql)
-    
-    renderedSql <- SqlRender::loadRenderTranslateSql(sqlFilename = "ir_tables.sql", 
+                                                     resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
+              
+              SqlRender::loadRenderTranslateSql(sqlFilename = "ir_tables.sql", 
                                                      packageName = "CdmAtlasCutover",
                                                      dbms = cdmSource$dbms,
-                                                     resultsDatabaseSchema = cdmSource$resultsDatabaseSchema)
+                                                     resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
+              
+              SqlRender::loadRenderTranslateSql(sqlFilename = "cohort_feature_tables.sql", 
+                                                packageName = "CdmAtlasCutover",
+                                                dbms = cdmSource$dbms,
+                                                resultsDatabaseSchema = cdmSource$resultsDatabaseSchema)
     
-    sqls <- c(sqls, renderedSql)
+    )
     
     writeLines(paste("Creating OHDSI Results tables for ", cdmSource$sourceKey, sep = " "))
     finalSql <- paste(sqls, collapse = "\n")
+    finalSql <- gsub(pattern = "IF OBJECT_ID", replacement = "\r\nIF OBJECT_ID", x = finalSql)
+    
     if (cdmSource$dbms == "pdw")
     {
       finalSql <- stringr::str_replace_all(finalSql, "IF XACT_STATE\\(\\) = 1 COMMIT;", "")
@@ -309,22 +317,31 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE)
 #' Refresh CDM sources in Atlas
 #' @author Ajit Londhe
 #' @details
-#' Refreshes the source cache that feeds into Atlas. This step is necessary when making changes to the SOURCE and SOURCE_DAIMON tables,
+#' Refreshes the source cache that feeds into Atlas. 
+#' This step is necessary when making changes to the SOURCE and SOURCE_DAIMON tables,
 #' so that the changes propagate to Atlas.
 #' 
-#' @param webApiUrl       The URL of the WebAPI server
-#' @param webApiPort      The port that WebAPI communicates on
-#' @param useHttps        Does the WebAPI endpoint utilize HTTPS?
+#' @param baseUrl        The base URL for the WebApi instance, for example:
+#'                       "http://api.ohdsi.org:80/WebAPI".
 #' 
 #' 
 #' @export
-refreshAtlasSources <- function (webApiUrl, webApiPort, useHttps = FALSE)
+refreshAtlasSources <- function (baseUrl)
 {
-  # TODO: unable to refresh 5-3-17
+  .checkBaseUrl <- function(baseUrl)
+  {
+    return(grepl(pattern = "https?:\\/\\/[a-z0-9]+([\\-\\.]{1}[a-z0-9]+)*\\.[a-z]{2,5}(:[0-9]{1,5})+(\\/.*)?\\/WebAPI$", 
+                 x = baseUrl, 
+                 ignore.case = FALSE))
+  }
+  
+  if (!.checkBaseUrl(baseUrl)) {
+    stop("Base URL not valid, should be like http://api.ohdsi.org:80/WebAPI")
+  }
+  
   tryCatch({
-    url <- renderSql(sql = "@protocol://@webApiUrl:@webApiPort/WebAPI/source/refresh", 
-                     protocol = ifelse(useHttps, "https", "http"), 
-                     webApiUrl = webApiUrl, webApiPort = webApiPort)$sql
+    url <- gsub(pattern = "@baseUrl", replacement = baseUrl, x = "@baseUrl/source/refresh")
+    
     req <- httr::GET(url)
     httr::stop_for_status(req)
     writeLines("Atlas sources refreshed")
