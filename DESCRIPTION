@@ -1,8 +1,8 @@
 Package: CdmAtlasCutover
 Type: Package
 Title: A package to prepare CDM databases for usage in Atlas/WebAPI
-Version: 1.10.1
-Date: 2017-11-20
+Version: 1.10.3
+Date: 2018-01-31
 Author: Ajit Londhe
 Maintainer: Ajit Londhe <alondhe2@its.jnj.com>
 Description: A package to prepare CDM databases for usage in Atlas by ensuring all cohort results, features, Heracles, and IR tables are created

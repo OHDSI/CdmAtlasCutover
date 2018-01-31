@@ -124,7 +124,7 @@ removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
   {
     connection <- DatabaseConnector::connect(repoConnectionDetails)
     DatabaseConnector::executeSql(connection = connection, sql = paste(sqls, collapse = "\n"))  
-    dbDisconnect(connection)
+    DatabaseConnector::disconnect(connection)
   }
 }
 
@@ -248,7 +248,7 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
   {
     connection <- connect(repoConnectionDetails)
     executeSql(connection = connection, sql = paste(sqls, collapse = "\n\n"))  
-    dbDisconnect(connection)
+    DatabaseConnector::disconnect(connection)
   }
 }
 
@@ -308,7 +308,7 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE)
     {
       connection <- connect(dbms = cdmSource$dbms, connectionString = cdmSource$connectionString)
       executeSql(connection = connection, sql = finalSql)
-      dbDisconnect(connection)
+      DatabaseConnector::disconnect(connection)
     }
   }
 }
