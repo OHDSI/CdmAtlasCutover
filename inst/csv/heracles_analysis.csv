@@ -1,0 +1,186 @@
+ANALYSIS_ID,ANALYSIS_NAME,STRATUM_1_NAME,STRATUM_2_NAME,STRATUM_3_NAME,STRATUM_4_NAME,STRATUM_5_NAME,ANALYSIS_TYPE
+112,Number of persons by observation period end month,calendar month,,,,,OBSERVATION
+817,"Distribution of high range, by observation_concept_id and unit_concept_id",,,,,,OBSERVATION
+109,Number of persons with continuous observation in each year,calendar year,,,,,OBSERVATION
+102,"Number of persons by gender by age, with age at first observation period",gender_concept_id,age,,,,OBSERVATION
+402,"Number of persons by condition occurrence start month, by condition_concept_id",condition_concept_id,calendar month,,,,CONDITION
+208,Number of visit records outside valid observation period,,,,,,VISITS
+505,"Number of death records, by death_type_concept_id",death_type_concept_id,,,,,DEATH
+903,Number of distinct drug era concepts per person,,,,,,DRUG_ERA
+814,"Number of observation records with no value (numeric, string, or concept)",,,,,,OBSERVATION
+111,Number of persons by observation period start month,calendar month,,,,,OBSERVATION
+4,Number of persons by race,race_concept_id,,,,,PERSON
+207,Number of visit records with invalid person_id,,,,,,VISITS
+605,"Number of procedure occurrence records, by procedure_concept_id by procedure_type_concept_id",procedure_concept_id,procedure_type_concept_id,,,,PROCEDURE
+210,Number of visit records with invalid care_site_id,,,,,,VISITS
+400,"Number of persons with at least one condition occurrence, by condition_concept_id",condition_concept_id,,,,,CONDITION
+201,"Number of visit occurrence records, by visit_concept_id",visit_concept_id,,,,,VISITS
+509,Number of death records with invalid person_id,,,,,,DEATH
+413,Number of condition occurrence records with invalid visit_id,,,,,,CONDITION
+406,Distribution of age by condition_concept_id,condition_concept_id,gender_concept_id,,,,CONDITION
+609,Number of procedure occurrence records with invalid person_id,,,,,,PROCEDURE
+105,Length of observation (days) of first observation period,,,,,,OBSERVATION
+9,Number of persons with invalid care_site_id,,,,,,PERSON
+2,Number of persons by gender,gender_concept_id,,,,,PERSON
+404,"Number of persons with at least one condition occurrence, by condition_concept_id by calendar year by gender by age decile",condition_concept_id,calendar year,gender_concept_id,age decile,,CONDITION
+1002,"Number of persons by condition era start month, by condition_concept_id",condition_concept_id,calendar month,,,,CONDITION_ERA
+511,Distribution of time from death to last condition,,,,,,DEATH
+203,Number of distinct visit occurrence concepts per person,,,,,,VISITS
+0,Source name,,,,,,PERSON
+1841,"Number of events by duration from cohort start to all occurrences of drug exposure, by drug_concept_id",drug_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+107,Length of observation (days) of first observation period by age decile,age decile,,,,,OBSERVATION
+810,Number of observation records outside valid observation period,,,,,,OBSERVATION
+209,Number of visit records with end date < start date,,,,,,VISITS
+403,Number of distinct condition occurrence concepts per person,,,,,,CONDITION
+204,"Number of persons with at least one visit occurrence, by visit_concept_id by calendar year by gender by age decile",visit_concept_id,calendar year,gender_concept_id,age decile,,VISITS
+504,"Number of persons with a death, by calendar year by gender by age decile",calendar year,gender_concept_id,age decile,,,DEATH
+816,"Distribution of low range, by observation_concept_id and unit_concept_id",,,,,,OBSERVATION
+7,Number of persons with invalid provider_id,,,,,,PERSON
+103,Distribution of age at first observation period,,,,,,OBSERVATION
+108,"Number of persons by length of observation period, in 30d increments",Observation period length 30d increments,,,,,OBSERVATION
+506,Distribution of age at death by gender,gender_concept_id,,,,,DEATH
+206,Distribution of age by visit_concept_id,visit_concept_id,gender_concept_id,,,,VISITS
+401,"Number of condition occurrence records, by condition_concept_id",condition_concept_id,,,,,CONDITION
+211,Distribution of length of stay by visit_concept_id,visit_concept_id,,,,,VISITS
+110,Number of persons with continuous observation in each month,calendar month,,,,,OBSERVATION
+101,"Number of persons by age, with age at first observation period",age,,,,,OBSERVATION
+5,Number of persons by ethnicity,ethnicity_concept_id,,,,,PERSON
+818,"Number of observation records below/within/above normal range, by observation_concept_id and unit_concept_id",,,,,,OBSERVATION
+104,Distribution of age at first observation period by gender,gender_concept_id,,,,,OBSERVATION
+809,Number of observation records with invalid person_id,,,,,,OBSERVATION
+3,Number of persons by year of birth,year_of_birth,,,,,PERSON
+8,Number of persons with invalid location_id,,,,,,PERSON
+602,"Number of persons by procedure occurrence start month, by procedure_concept_id",procedure_concept_id,calendar month,,,,PROCEDURE
+200,"Number of persons with at least one visit occurrence, by visit_concept_id",visit_concept_id,,,,,VISITS
+1800,"Number of persons by age, with age at cohort start",age,,,,,COHORT_SPECIFIC_ANALYSES
+412,Number of condition occurrence records with invalid provider_id,,,,,,CONDITION
+1840,"Number of persons by duration from cohort start to first occurrence of drug exposure, by drug_concept_id",drug_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1,Number of persons,,,,,,PERSON
+610,Number of procedure occurrence records outside valid observation period,,,,,,PROCEDURE
+106,Length of observation (days) of first observation period by gender,gender_concept_id,,,,,OBSERVATION
+1003,Number of distinct condition era concepts per person,,,,,,CONDITION_ERA
+220,Number of visit occurrence records by visit occurrence start month,calendar month,,,,,VISITS
+202,"Number of persons by visit occurrence start month, by visit_concept_id",visit_concept_id,calendar month,,,,VISITS
+510,Number of death records outside valid observation period,,,,,,DEATH
+807,"Number of observation occurrence records, by observation_concept_id and unit_concept_id",observation_concept_id,unit_concept_id,,,,OBSERVATION
+613,Number of procedure occurrence records with invalid visit_id,,,,,,PROCEDURE
+1805,"Number of persons by duration from observation start to cohort start, in 30d increments",Baseline period length 30d increments,,,,,COHORT_SPECIFIC_ANALYSES
+409,Number of condition occurrence records with invalid person_id,,,,,,CONDITION
+709,Number of drug exposure records with invalid person_id,,,,,,DRUG
+1009,Number of condition eras outside valid observation period,,,,,,CONDITION_ERA
+620,Number of procedure occurrence records  by procedure occurrence start month,calendar month,,,,,PROCEDURE
+114,Number of persons with observation period before year-of-birth,,,,,,OBSERVATION
+716,Distribution of refills by drug_concept_id,drug_concept_id,,,,,DRUG
+711,Number of drug exposure records with end date < start date,,,,,,DRUG
+411,Number of condition occurrence records with end date < start date,,,,,,CONDITION
+1807,"Number of persons by duration from cohort end to observation end, in 30d increments",Post-cohort period length 30d increments,,,,,COHORT_SPECIFIC_ANALYSES
+502,Number of persons by death month,calendar month,,,,,DEATH
+603,Number of distinct procedure occurrence concepts per person,,,,,,PROCEDURE
+1000,"Number of persons with at least one condition era, by condition_concept_id",condition_concept_id,,,,,CONDITION_ERA
+1801,Distribution of age at cohort start,,,,,,COHORT_SPECIFIC_ANALYSES
+803,Number of distinct observation occurrence concepts per person,,,,,,OBSERVATION
+1861,"Number of events by duration from cohort start to all occurrences of condition era, by condition_concept_id",condition_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+116,Number of persons with at least one day of observation in each year by gender and age decile,calendar year,gender_concept_id,age decile,,,OBSERVATION
+1803,Distribution of age at cohort start by cohort start year,calendar year,,,,,COHORT_SPECIFIC_ANALYSES
+1701,Number of records with cohort end date < cohort start date,,,,,,COHORT
+601,"Number of procedure occurrence records, by procedure_concept_id",procedure_concept_id,,,,,PROCEDURE
+500,"Number of persons with death, by cause_of_death_concept_id",cause_of_death_concept_id,,,,,DEATH
+515,Distribution of time from death to last observation,,,,,,DEATH
+801,"Number of observation occurrence records, by observation_concept_id",observation_concept_id,,,,,OBSERVATION
+1101,Number of persons by location state,state,,,,,LOCATION
+1804,"Number of persons by duration from cohort start to cohort end, in 30d increments",Cohort period length 30d increments,,,,,COHORT_SPECIFIC_ANALYSES
+902,"Number of persons by drug era start month, by drug_concept_id",drug_concept_id,calendar month,,,,DRUG_ERA
+606,Distribution of age by procedure_concept_id,procedure_concept_id,gender_concept_id,,,,PROCEDURE
+113,Number of persons by number of observation periods,number of observation periods,,,,,OBSERVATION
+612,Number of procedure occurrence records with invalid provider_id,,,,,,PROCEDURE
+806,Distribution of age by observation_concept_id,observation_concept_id,gender_concept_id,,,,OBSERVATION
+604,"Number of persons with at least one procedure occurrence, by procedure_concept_id by calendar year by gender by age decile",procedure_concept_id,calendar year,gender_concept_id,age decile,,PROCEDURE
+717,Distribution of quantity by drug_concept_id,drug_concept_id,,,,,DRUG
+1806,"Number of persons by duration from cohort start to observation end, in 30d increments",Follow-up period length 30d increments,,,,,COHORT_SPECIFIC_ANALYSES
+410,Number of condition occurrence records outside valid observation period,,,,,,CONDITION
+804,"Number of persons with at least one observation occurrence, by observation_concept_id by calendar year by gender by age decile",observation_concept_id,calendar year,gender_concept_id,age decile,,OBSERVATION
+815,"Distribution of numeric values, by observation_concept_id and unit_concept_id",,,,,,OBSERVATION
+115,Number of persons with observation period end < observation period start,,,,,,OBSERVATION
+802,"Number of persons by observation occurrence start month, by observation_concept_id",observation_concept_id,calendar month,,,,OBSERVATION
+117,Number of persons with at least one day of observation in each month,calendar month,,,,,OBSERVATION
+820,Number of observation records  by observation start month,calendar month,,,,,OBSERVATION
+704,"Number of persons with at least one drug exposure, by drug_concept_id by calendar year by gender by age decile",drug_concept_id,calendar year,gender_concept_id,age decile,,DRUG
+701,"Number of drug exposure records, by drug_concept_id",drug_concept_id,,,,,DRUG
+1001,"Number of condition era records, by condition_concept_id",condition_concept_id,,,,,CONDITION_ERA
+420,Number of condition occurrence records by condition occurrence start month,calendar month,,,,,CONDITION
+800,"Number of persons with at least one observation occurrence, by observation_concept_id",observation_concept_id,,,,,OBSERVATION
+1700,Number of records by cohort_definition_id,cohort_definition_id,,,,,COHORT
+405,"Number of condition occurrence records, by condition_concept_id by condition_type_concept_id",condition_concept_id,condition_type_concept_id,,,,CONDITION
+501,"Number of records of death, by cause_of_death_concept_id",cause_of_death_concept_id,,,,,DEATH
+600,"Number of persons with at least one procedure occurrence, by procedure_concept_id",procedure_concept_id,,,,,PROCEDURE
+1314,"Number of measurement records with no value (numeric, string, or concept)",,,,,,MEASUREMENT
+812,Number of observation records with invalid provider_id,,,,,,OBSERVATION
+1004,"Number of persons with at least one condition era, by condition_concept_id by calendar year by gender by age decile",condition_concept_id,calendar year,gender_concept_id,age decile,,CONDITION_ERA
+908,Number of drug eras without valid person,,,,,,DRUG_ERA
+1304,"Number of persons with at least one measurement occurrence, by measurement_concept_id by calendar year by gender by age decile",measurement_concept_id,calendar year,gender_concept_id,age decile,,MEASUREMENT
+805,"Number of observation occurrence records, by observation_concept_id by observation_type_concept_id",observation_concept_id,observation_type_concept_id,,,,OBSERVATION
+901,"Number of drug era records, by drug_concept_id",drug_concept_id,,,,,DRUG_ERA
+910,Number of drug eras with end date < start date,,,,,,DRUG_ERA
+920,Number of drug era records  by drug era start month,calendar month,,,,,DRUG_ERA
+700,"Number of persons with at least one drug exposure, by drug_concept_id",drug_concept_id,,,,,DRUG
+705,"Number of drug exposure records, by drug_concept_id by drug_type_concept_id",drug_concept_id,drug_type_concept_id,,,,DRUG
+1318,"Number of measurement records below/within/above normal range, by measurement_concept_id and unit_concept_id",,,,,,MEASUREMENT
+513,Distribution of time from death to last visit,,,,,,DEATH
+906,Distribution of age by drug_concept_id,drug_concept_id,gender_concept_id,,,,DRUG_ERA
+702,"Number of persons by drug exposure start month, by drug_concept_id",drug_concept_id,calendar month,,,,DRUG
+1850,"Number of persons by duration from cohort start to first occurrence of observation, by observation_concept_id",observation_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1831,"Number of events by duration from cohort start to all occurrences of procedure occurrence, by procedure_concept_id",procedure_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1008,Number of condition eras without valid person,,,,,,CONDITION_ERA
+909,Number of drug eras outside valid observation period,,,,,,DRUG_ERA
+813,Number of observation records with invalid visit_id,,,,,,OBSERVATION
+1315,"Distribution of numeric values, by measurement_concept_id and unit_concept_id",,,,,,MEASUREMENT
+710,Number of drug exposure records outside valid observation period,,,,,,DRUG
+900,"Number of persons with at least one drug era, by drug_concept_id",drug_concept_id,,,,,DRUG_ERA
+720,Number of drug exposure records  by drug exposure start month,calendar month,,,,,DRUG
+1313,Number of measurement records with invalid visit_id,,,,,,MEASUREMENT
+512,Distribution of time from death to last drug,,,,,,DEATH
+1860,"Number of persons by duration from cohort start to first occurrence of condition era, by condition_concept_id",condition_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1813,Distribution of duration (days) from cohort end to observation end,,,,,,COHORT_SPECIFIC_ANALYSES
+715,Distribution of days_supply by drug_concept_id,drug_concept_id,,,,,DRUG
+514,Distribution of time from death to last procedure,,,,,,DEATH
+1830,"Number of persons by duration from cohort start to first occurrence of procedure occurrence, by procedure_concept_id",procedure_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1802,Distribution of age at cohort start by gender,gender_concept_id,,,,,COHORT_SPECIFIC_ANALYSES
+703,Number of distinct drug exposure concepts per person,,,,,,DRUG
+706,Distribution of age by drug_concept_id,drug_concept_id,gender_concept_id,,,,DRUG
+1100,Number of persons by location 3-digit zip,3-digit zip,,,,,LOCATION
+1808,Distribution of duration (days) from cohort start to cohort end,,,,,,COHORT_SPECIFIC_ANALYSES
+1312,Number of measurement records with invalid provider_id,,,,,,MEASUREMENT
+1306,Distribution of age by measurement_concept_id,measurement_concept_id,gender_concept_id,,,,MEASUREMENT
+1810,"Distribution of duration (days) from cohort start to cohort end, by age decile",age decile,,,,,COHORT_SPECIFIC_ANALYSES
+1006,Distribution of age by condition_concept_id,condition_concept_id,gender_concept_id,,,,CONDITION_ERA
+904,"Number of persons with at least one drug era, by drug_concept_id by calendar year by gender by age decile",drug_concept_id,calendar year,gender_concept_id,age decile,,DRUG_ERA
+1870,"Number of persons by duration from cohort start to first occurrence of drug era, by drug_concept_id",drug_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1020,Number of condition era records by condition era start month,calendar month,,,,,CONDITION_ERA
+712,Number of drug exposure records with invalid provider_id,,,,,,DRUG
+1316,"Distribution of low range, by measurement_concept_id and unit_concept_id",,,,,,MEASUREMENT
+1305,"Number of measurement occurrence records, by measurement_concept_id by measurement_type_concept_id",measurement_concept_id,measurement_type_concept_id,,,,MEASUREMENT
+1809,"Distribution of duration (days) from cohort start to cohort end, by gender",gender_concept_id,,,,,COHORT_SPECIFIC_ANALYSES
+1320,Number of measurement records  by measurement start month,calendar month,,,,,MEASUREMENT
+1811,Distribution of duration (days) from observation start to cohort start,,,,,,COHORT_SPECIFIC_ANALYSES
+1010,Number of condition eras with end date < start date,,,,,,CONDITION_ERA
+1007,"Distribution of condition era length, by condition_concept_id",condition_concept_id,,,,,CONDITION_ERA
+1871,"Number of events by duration from cohort start to all occurrences of drug era, by drug_concept_id",drug_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1302,"Number of persons by measurement occurrence start month, by measurement_concept_id",measurement_concept_id,calendar month,,,,MEASUREMENT
+1309,Number of measurement records with invalid person_id,,,,,,MEASUREMENT
+1851,"Number of events by duration from cohort start to all occurrences of observation, by observation_concept_id",observation_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1317,"Distribution of high range, by measurement_concept_id and unit_concept_id",,,,,,MEASUREMENT
+713,Number of drug exposure records with invalid visit_id,,,,,,DRUG
+907,"Distribution of drug era length, by drug_concept_id",drug_concept_id,,,,,DRUG_ERA
+1812,Distribution of duration (days) from cohort start to observation end,,,,,,COHORT_SPECIFIC_ANALYSES
+1200,Number of persons by place of service,place_of_service_concept_id,,,,,CARE_SITE
+1821,"Number of events by duration from cohort start to all occurrences of condition occurrence, by condition_concept_id",condition_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1816,Number of persons by number of cohort periods,number of cohort periods,,,,,COHORT_SPECIFIC_ANALYSES
+1820,"Number of persons by duration from cohort start to first occurrence of condition occurrence, by condition_concept_id",condition_concept_id,time-to-event 30d increments,,,,COHORT_SPECIFIC_ANALYSES
+1201,Number of visits by place of service,place_of_service_concept_id,,,,,CARE_SITE
+1303,Number of distinct measurement occurrence concepts per person,,,,,,MEASUREMENT
+1814,Number of persons by cohort start year by gender by age decile,calendar year,gender_concept_id,age decile,,,COHORT_SPECIFIC_ANALYSES
+1310,Number of measurement records outside valid measurement period,,,,,,MEASUREMENT
+1307,"Number of measurement occurrence records, by measurement_concept_id and unit_concept_id",measurement_concept_id,unit_concept_id,,,,MEASUREMENT
+1815,Number of persons by cohort start month,calendar month,,,,,COHORT_SPECIFIC_ANALYSES
+1301,"Number of measurement occurrence records, by measurement_concept_id",measurement_concept_id,,,,,MEASUREMENT
+1300,"Number of persons with at least one measurement occurrence, by measurement_concept_id",measurement_concept_id,,,,,MEASUREMENT

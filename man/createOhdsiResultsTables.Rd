@@ -4,10 +4,12 @@
 \alias{createOhdsiResultsTables}
 \title{createOhdsiResultsTables}
 \usage{
-createOhdsiResultsTables(cdmSources, sqlOnly = FALSE)
+createOhdsiResultsTables(cdmSources, connectionDetails, sqlOnly = FALSE)
 }
 \arguments{
 \item{cdmSources}{The list of databases to cut over}
+
+\item{connectionDetails}{A connectionDetails object that can create tables in the CDM}
 
 \item{sqlOnly}{Generate SQL only, don't execute}
 }

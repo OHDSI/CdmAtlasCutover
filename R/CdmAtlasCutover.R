@@ -158,7 +158,7 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
     sql <- SqlRender::renderSql(sql = "select max(@prefix_id) from @ohdsiRepositorySchema.@prefix;", 
                      ohdsiRepositorySchema = repoConnectionDetails$schema, prefix = prefix)$sql 
     connection <- DatabaseConnector::connect(repoConnectionDetails)
-    newId <- as.numeric(querySql(connection = connection, sql = sql))
+    newId <- as.numeric(DatabaseConnector::querySql(connection = connection, sql = sql))
     return(newId)
   }
   updateDaimonPriority <- function(sqls, repoConnectionDetails, cdmSource)
@@ -260,12 +260,37 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
 #' @return
 #' none
 #'
-#' @param cdmSources     The list of databases to cut over
-#' @param sqlOnly        Generate SQL only, don't execute
+#' @param cdmSources          The list of databases to cut over
+#' @param connectionDetails   A connectionDetails object that can create tables in the CDM
+#' @param sqlOnly             Generate SQL only, don't execute
 #' 
 #' @export
-createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE)
+createOhdsiResultsTables <- function (cdmSources, connectionDetails, sqlOnly = FALSE)
 {
+  heraclesAnalysis <- read.csv(file = "inst/csv/heracles_analysis.csv", header = T, stringsAsFactors = F)
+  heraclesAnalysis[is.na(heraclesAnalysis)] <- "NULL"
+  heraclesAnalysis[heraclesAnalysis == ""] <- "NULL"
+  
+  heraclesAnalysisSelects <- apply(heraclesAnalysis, 1, function(h) {
+    sql <- SqlRender::renderSql("select @analysisId as analysis_id, 
+                                '@analysisName' as analysis_name, 
+                                '@stratum1Name' as stratum_1_name, 
+                                '@stratum2Name' as stratum_2_name,
+                                '@stratum3Name' as stratum_3_name,
+                                '@stratum4Name' as stratum_4_name,
+                                '@stratum5Name' as stratum_5_name,
+                                '@analysisType' as analysis_type",
+                                analysisId = h["ANALYSIS_ID"],
+                                analysisName = h["ANALYSIS_NAME"],
+                                stratum1Name = h["STRATUM_1_NAME"],
+                                stratum2Name = h["STRATUM_2_NAME"],
+                                stratum3Name = h["STRATUM_3_NAME"],
+                                stratum4Name = h["STRATUM_4_NAME"],
+                                stratum5Name = h["STRATUM_5_NAME"],
+                                analysisType = h["ANALYSIS_TYPE"])$sql
+    sql <- gsub(pattern = "'NULL'", replacement = "NULL", x = sql)
+  })
+  
   for (cdmSource in cdmSources)
   {
     sqls <- c(SqlRender::loadRenderTranslateSql(sqlFilename = "heracles_tables.sql", 
@@ -286,13 +311,20 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE)
               SqlRender::loadRenderTranslateSql(sqlFilename = "cohort_feature_tables.sql", 
                                                 packageName = "CdmAtlasCutover",
                                                 dbms = cdmSource$dbms,
-                                                resultsDatabaseSchema = cdmSource$resultsDatabaseSchema)
+                                                resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
+              
+              SqlRender::loadRenderTranslateSql(sqlFilename = "heracles_analysis.sql",
+                                                packageName = "CdmAtlasCutover",
+                                                dbms = cdmSource$dbms,
+                                                resultsDatabaseSchema = cdmSource$resultsDatabaseSchema,
+                                                heraclesAnalysisSelects = paste(heraclesAnalysisSelects, collapse = "\nunion all\n"))
     
     )
     
     writeLines(paste("Creating OHDSI Results tables for ", cdmSource$sourceKey, sep = " "))
     finalSql <- paste(sqls, collapse = "\n")
     finalSql <- gsub(pattern = "IF OBJECT_ID", replacement = "\r\nIF OBJECT_ID", x = finalSql)
+    
     
     if (cdmSource$dbms == "pdw")
     {
@@ -306,8 +338,10 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE)
     }
     else
     {
-      connection <- connect(dbms = cdmSource$dbms, connectionString = cdmSource$connectionString)
-      executeSql(connection = connection, sql = finalSql)
+      connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = cdmSource$dbms, 
+                                                                      connectionString = cdmSource$connectionString)
+      connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
+      DatabaseConnector::executeSql(connection = connection, sql = finalSql)
       DatabaseConnector::disconnect(connection)
     }
   }
