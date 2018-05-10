@@ -260,14 +260,16 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
 #' @return
 #' none
 #'
-#' @param cdmSources          The list of databases to cut over
-#' @param connectionDetails   A connectionDetails object that can create tables in the CDM
-#' @param sqlOnly             Generate SQL only, don't execute
+#' @param cdmSources             The list of databases to cut over
+#' @param connectionDetails      A connectionDetails object that can create tables in the CDM
+#' @param sqlOnly                Generate SQL only, don't execute
 #' 
 #' @export
 createOhdsiResultsTables <- function (cdmSources, connectionDetails, sqlOnly = FALSE)
 {
-  heraclesAnalysis <- read.csv(file = "inst/csv/heracles_analysis.csv", header = T, stringsAsFactors = F)
+  heraclesAnalysis <- read.csv(file = system.file("csv", "heracles_analysis.csv", package = "CdmAtlasCutover"), 
+                               header = TRUE, stringsAsFactors = FALSE)
+  
   heraclesAnalysis[is.na(heraclesAnalysis)] <- "NULL"
   heraclesAnalysis[heraclesAnalysis == ""] <- "NULL"
   
