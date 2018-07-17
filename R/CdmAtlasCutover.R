@@ -1,6 +1,6 @@
 # @file CdmAtlasCutover
 #
-# Copyright 2017 Observational Health Data Sciences and Informatics
+# Copyright 2018 Observational Health Data Sciences and Informatics
 #
 # This file is part of Achilles
 # 
@@ -58,8 +58,8 @@ buildCdmSource <- function(sourceKey,
                            vocabDatabaseSchema = NULL,
                            connectionString = NULL, 
                            sourceId = NULL, 
-                           priority = 0)
-{
+                           priority = 0) {
+  
   cdmSource <- {}
   cdmSource$sourceId = sourceId
   cdmSource$sourceKey = sourceKey
@@ -85,8 +85,8 @@ buildCdmSource <- function(sourceKey,
 #' @param sqlOnly                   Generate SQL only, don't execute
 #' 
 #' @export
-removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
-{
+removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE) {
+  
   sourceKeys <- sapply(cdmSources, function(cdmSource) { sourceKey <- cdmSource$sourceKey })
   sqls <- c()
   sql <- SqlRender::renderSql(sql = "select source_id from @ohdsiRepositorySchema.source where source_key in (@sourceKeys);", 
@@ -95,33 +95,29 @@ removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
   connection <- DatabaseConnector::connect(repoConnectionDetails)
   sourceIds <- DatabaseConnector::querySql(connection = connection, sql = sql)
 
-  if (nrow(sourceIds) == 0)
-  {
+  if (nrow(sourceIds) == 0) {
     stop("No matching CDM sources found")
   }
   
   sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "ohdsi_repo_deletes.sql", 
-                                                   packageName = "CdmAtlasCutover", 
-                                                   dbms = repoConnectionDetails$dbms,
-                                                   ohdsiRepositorySchema = repoConnectionDetails$schema, 
-                                                   sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
+                                           packageName = "CdmAtlasCutover", 
+                                           dbms = repoConnectionDetails$dbms,
+                                           ohdsiRepositorySchema = repoConnectionDetails$schema, 
+                                           sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
   sqls <- c(sqls, sql)
 
   sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "remove_sources.sql", 
-                              packageName = "CdmAtlasCutover", 
-                              dbms = repoConnectionDetails$dbms,
-                              ohdsiRepositorySchema = repoConnectionDetails$schema,
-                              sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
+                                           packageName = "CdmAtlasCutover", 
+                                           dbms = repoConnectionDetails$dbms,
+                                           ohdsiRepositorySchema = repoConnectionDetails$schema,
+                                           sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
 
   sqls <- c(sqls, sql)
   
-  if (sqlOnly)
-  {
+  if (sqlOnly) {
     if (!dir.exists("output")) { dir.create("output") }
     SqlRender::writeSql(sql = paste(sqls, collapse = "\n"), targetFile = paste("output", "remove_cdm_sources.sql", sep = "/"))
-  }
-  else
-  {
+  } else {
     connection <- DatabaseConnector::connect(repoConnectionDetails)
     DatabaseConnector::executeSql(connection = connection, sql = paste(sqls, collapse = "\n"))  
     DatabaseConnector::disconnect(connection)
@@ -144,51 +140,50 @@ removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
 #' @param sqlOnly                   Generate SQL only, don't execute
 #' 
 #' @export
-insertCdmSources <- function(repoConnectionDetails, cdmSources, 
-                           sourceIdx = FALSE, daimonIdx = FALSE,
-                           sqlOnly = FALSE)
-{
-  if ("TRUE" %in% sapply(cdmSources, function(cdmSource) { connectionString <- is.null(cdmSource$connectionString) }))
-  {
+insertCdmSources <- function(repoConnectionDetails, 
+                             cdmSources, 
+                             sourceIdx = FALSE, 
+                             daimonIdx = FALSE,
+                             sqlOnly = FALSE) {
+  
+  if ("TRUE" %in% sapply(cdmSources, function(cdmSource) { connectionString <- is.null(cdmSource$connectionString) })) {
     stop("Connection Strings must be defined for each CDM source object in cdmSources list")   
   }
   
-  getMaxId <- function(repoConnectionDetails, prefix)
-  {
+  getMaxId <- function(repoConnectionDetails, prefix) {
+    
     sql <- SqlRender::renderSql(sql = "select max(@prefix_id) from @ohdsiRepositorySchema.@prefix;", 
                      ohdsiRepositorySchema = repoConnectionDetails$schema, prefix = prefix)$sql 
     connection <- DatabaseConnector::connect(repoConnectionDetails)
     newId <- as.numeric(DatabaseConnector::querySql(connection = connection, sql = sql))
     return(newId)
   }
-  updateDaimonPriority <- function(sqls, repoConnectionDetails, cdmSource)
-  {
+  
+  updateDaimonPriority <- function(sqls, repoConnectionDetails, cdmSource) {
     sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "update_daimon_priority.sql", 
-                                  packageName = "CdmAtlasCutover", 
-                                  dbms = repoConnectionDetails$dbms, 
-                                  ohdsiRepositorySchema = repoConnectionDetails$schema)
+                                             packageName = "CdmAtlasCutover", 
+                                             dbms = repoConnectionDetails$dbms, 
+                                             ohdsiRepositorySchema = repoConnectionDetails$schema)
     
     sqls <- c(sqls, sql)
   }
   
   sqls <- c()
   maxSourceId <- getMaxId(repoConnectionDetails, "source")
-  for (i in 1:length(cdmSources))
-  {
+  
+  for (i in 1:length(cdmSources)) {
     sourceValues <- {}
-    if (!sourceIdx)
-    {
-      if (is.null(cdmSources[[i]]$sourceId))
-      {
+    if (!sourceIdx) {
+      if (is.null(cdmSources[[i]]$sourceId)) {
         cdmSources[[i]]$sourceId <- maxSourceId + i
       }  
       sourceValues$source_id <- cdmSources[[i]]$sourceId
     }
     
-    sourceValues$source_name <- paste0("'", cdmSources[[i]]$sourceName, "'")
-    sourceValues$source_key <- paste0("'", cdmSources[[i]]$sourceKey, "'")
-    sourceValues$source_connection <- paste0("'", cdmSources[[i]]$connectionString, "'")
-    sourceValues$source_dialect <- paste0("'", cdmSources[[i]]$dbms, "'")
+    sourceValues$source_name <- shQuote(cdmSources[[i]]$sourceName) 
+    sourceValues$source_key <- shQuote(cdmSources[[i]]$sourceKey) 
+    sourceValues$source_connection <- shQuote(cdmSources[[i]]$connectionString)
+    sourceValues$source_dialect <- shQuote(cdmSources[[i]]$dbms)
     
     sql <- renderSql(sql = "INSERT INTO @ohdsiRepositorySchema.source (@columns) values (@values);",
                      ohdsiRepositorySchema = repoConnectionDetails$schema,
@@ -199,30 +194,25 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
     
     maxDaimonId <- ((i * 3) + getMaxId(repoConnectionDetails, "source_daimon") - 2)
     
-    for (daimonType in c(0:2))
-    {
+    for (daimonType in c(0:2)) {
+      
       daimonValues <- {}
-      if (!daimonIdx)
-      {
+      if (!daimonIdx){
         daimonValues$source_daimon_id <- paste0(maxDaimonId + daimonType, " as source_daimon_id")
       }
       daimonValues$priority <- paste0(0, ' as priority')
       daimonValues$daimon_type <- paste0(daimonType,' as daimon_type')
       
-      if (daimonType == 0)
-      {
+      if (daimonType == 0) {
         daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$cdmDatabaseSchema, "' as varchar(255)) as table_qualifier")
       }
-      else if (daimonType == 1)
-      {
+      else if (daimonType == 1) {
         daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$vocabDatabaseSchema, "' as varchar(255)) as table_qualifier")
       }
-      else
-      {
+      else {
         daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$resultsDatabaseSchema, "' as varchar(255)) as table_qualifier")
         
-        if (cdmSources[[i]]$priority == 1)
-        {
+        if (cdmSources[[i]]$priority == 1) {
           daimonValues$priority <- paste0(1, ' as priority')
           updateDaimonPriority(sqls = sqls, repoConnectionDetails = repoConnectionDetails, cdmSource = cdmSources[[i]])
         }
@@ -239,13 +229,11 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
     }
   }
   
-  if (sqlOnly)
-  {
+  if (sqlOnly) {
+    
     if (!dir.exists("output")) { dir.create("output") }
     SqlRender::writeSql(sql = paste(sqls, collapse = "\n\n"), targetFile = paste("output", "insert_cdm_sources.sql", sep = "/"))
-  }
-  else
-  {
+  } else {
     connection <- connect(repoConnectionDetails)
     executeSql(connection = connection, sql = paste(sqls, collapse = "\n\n"))  
     DatabaseConnector::disconnect(connection)
@@ -265,81 +253,55 @@ insertCdmSources <- function(repoConnectionDetails, cdmSources,
 #' @param sqlOnly                Generate SQL only, don't execute
 #' 
 #' @export
-createOhdsiResultsTables <- function (cdmSources, connectionDetails, sqlOnly = FALSE)
-{
-  heraclesAnalysis <- read.csv(file = system.file("csv", "heracles_analysis.csv", package = "CdmAtlasCutover"), 
-                               header = TRUE, stringsAsFactors = FALSE)
+createOhdsiResultsTables <- function (cdmSources, connectionDetails, sqlOnly = FALSE) {
   
-  heraclesAnalysis[is.na(heraclesAnalysis)] <- "NULL"
-  heraclesAnalysis[heraclesAnalysis == ""] <- "NULL"
+  gitPath <- "https://api.github.com/repos/OHDSI/WebAPI/contents/src/main/resources/ddl/results"
+  req <- httr::GET(gitPath)
+  httr::stop_for_status(req)
+  content <- httr::content(req)
   
-  heraclesAnalysisSelects <- apply(heraclesAnalysis, 1, function(h) {
-    sql <- SqlRender::renderSql("select @analysisId as analysis_id, 
-                                '@analysisName' as analysis_name, 
-                                '@stratum1Name' as stratum_1_name, 
-                                '@stratum2Name' as stratum_2_name,
-                                '@stratum3Name' as stratum_3_name,
-                                '@stratum4Name' as stratum_4_name,
-                                '@stratum5Name' as stratum_5_name,
-                                '@analysisType' as analysis_type",
-                                analysisId = h["ANALYSIS_ID"],
-                                analysisName = h["ANALYSIS_NAME"],
-                                stratum1Name = h["STRATUM_1_NAME"],
-                                stratum2Name = h["STRATUM_2_NAME"],
-                                stratum3Name = h["STRATUM_3_NAME"],
-                                stratum4Name = h["STRATUM_4_NAME"],
-                                stratum5Name = h["STRATUM_5_NAME"],
-                                analysisType = h["ANALYSIS_TYPE"])$sql
-    sql <- gsub(pattern = "'NULL'", replacement = "NULL", x = sql)
+  ddlFiles <- content[sapply(content, function(d) d$name != "create_index.sql" & 
+                               !startsWith(d$name, "init") )]
+  ddlUrls <- unlist(lapply(ddlFiles, function(d) d$download_url))
+  
+  ddlSqls <- lapply(ddlUrls, function(url) {
+    sql <- RCurl::getURL(url,
+                  ssl.verifyhost = FALSE, 
+                  ssl.verifypeer =  FALSE)
+    sql <- SqlRender::renderSql(sql = sql,
+                                results_schema = cdmSource$resultsDatabaseSchema)$sql
   })
   
-  for (cdmSource in cdmSources)
-  {
-    sqls <- c(SqlRender::loadRenderTranslateSql(sqlFilename = "heracles_tables.sql", 
-                                             packageName = "CdmAtlasCutover", 
-                                             dbms = cdmSource$dbms,
-                                             resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
-              
-              SqlRender::loadRenderTranslateSql(sqlFilename = "cohort_inclusion_tables.sql", 
-                                                     packageName = "CdmAtlasCutover",
-                                                     dbms = cdmSource$dbms,
-                                                     resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
-              
-              SqlRender::loadRenderTranslateSql(sqlFilename = "ir_tables.sql", 
-                                                     packageName = "CdmAtlasCutover",
-                                                     dbms = cdmSource$dbms,
-                                                     resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
-              
-              SqlRender::loadRenderTranslateSql(sqlFilename = "cohort_feature_tables.sql", 
-                                                packageName = "CdmAtlasCutover",
-                                                dbms = cdmSource$dbms,
-                                                resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
-              
-              SqlRender::loadRenderTranslateSql(sqlFilename = "heracles_analysis.sql",
-                                                packageName = "CdmAtlasCutover",
-                                                dbms = cdmSource$dbms,
-                                                resultsDatabaseSchema = cdmSource$resultsDatabaseSchema,
-                                                heraclesAnalysisSelects = paste(heraclesAnalysisSelects, collapse = "\nunion all\n"))
+  initFiles <- content[sapply(content, function(d) startsWith(tolower(d$name), "init") )]
+  initUrls <- unlist(lapply(initFiles, function(d) d$download_url))
+  
+  initSqls <- lapply(initUrls, function(url) {
+    sql <- RCurl::getURL(url,
+                         ssl.verifyhost = FALSE, 
+                         ssl.verifypeer =  FALSE)
+    sql <- SqlRender::renderSql(sql = sql,
+                                results_schema = cdmSource$resultsDatabaseSchema)$sql
+  })
+  
+  sqls <- c(ddlSqls, initSqls)
+  
+  
+  for (cdmSource in cdmSources) {
     
-    )
-    
-    writeLines(paste("Creating OHDSI Results tables for ", cdmSource$sourceKey, sep = " "))
+    writeLines(sprintf("Creating OHDSI Results tables for %s", cdmSource$sourceKey))
     finalSql <- paste(sqls, collapse = "\n")
     finalSql <- gsub(pattern = "IF OBJECT_ID", replacement = "\r\nIF OBJECT_ID", x = finalSql)
     
-    
-    if (cdmSource$dbms == "pdw")
-    {
+    if (cdmSource$dbms == "pdw") {
       finalSql <- stringr::str_replace_all(finalSql, "IF XACT_STATE\\(\\) = 1 COMMIT;", "")
     }
-    if (sqlOnly)
-    {
+    if (sqlOnly) {
       if (!dir.exists("output")) { dir.create("output") }
       SqlRender::writeSql(sql = finalSql, 
-                          targetFile = paste("output", paste0(cdmSource$sourceKey, "~create_ohdsi_results_tables.sql"), sep = "/"))
-    }
-    else
-    {
+                          targetFile = file.path("output", 
+                                                 sprintf("%s~create_ohdsi_results_tables.sql", 
+                                                         cdmSource$sourceKey)))
+    } else {
       connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = cdmSource$dbms, 
                                                                       connectionString = cdmSource$connectionString)
       connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
@@ -362,10 +324,8 @@ createOhdsiResultsTables <- function (cdmSources, connectionDetails, sqlOnly = F
 #' 
 #' 
 #' @export
-refreshAtlasSources <- function (baseUrl)
-{
-  .checkBaseUrl <- function(baseUrl)
-  {
+refreshAtlasSources <- function (baseUrl) {
+  .checkBaseUrl <- function(baseUrl) {
     return(grepl(pattern = "https?:\\/\\/[a-z0-9]+([\\-\\.]{1}[a-z0-9]+)*\\.[a-z]{2,5}(:[0-9]{1,5})+(\\/.*)?\\/WebAPI$", 
                  x = baseUrl, 
                  ignore.case = FALSE))
