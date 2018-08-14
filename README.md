@@ -31,11 +31,20 @@ oldCdmSources <- list(
     resultsDatabaseSchema = "ohdsi_results", vocabDatabaseSchema = "cdm", priority = 1,
     connectionString = "jdbc:redshift://some-redshift-cluster:5439/testdb_v123?user=some-user&password=some-password")
   )
-  
+
+## if not using encrypted credentials in WebAPI  
 newCdmSources <- list(
   buildCdmSource(sourceKey = "TestDb_V456", sourceName = "Test Database v456", dbms = "redshift", cdmDatabaseSchema = "cdm",
     resultsDatabaseSchema = "ohdsi_results", vocabDatabaseSchema = "cdm", priority = 1,
     connectionString = "jdbc:redshift://some-redshift-cluster:5439/testdb_v456?user=some-user&password=some-password")
+  )
+
+## if using encrypted credentials in WebAPI
+newCdmSources <- list(
+  buildCdmSource(sourceKey = "TestDb_V456", sourceName = "Test Database v456", dbms = "redshift", cdmDatabaseSchema = "cdm",
+    resultsDatabaseSchema = "ohdsi_results", vocabDatabaseSchema = "cdm", priority = 1,
+    connectionString = "jdbc:redshift://some-redshift-cluster:5439/testdb_v456"),
+    user = some-user, password = some-password
   )
 
 ## remove old version of a CDM data source  

@@ -48,6 +48,8 @@
 #'                                     (\code{\link{removeCdmSources}})
 #' @param priority                     1 = the source become the one Atlas uses by default (e.g. to show record counts)
 #'                                     0 = the source will not become the one Atlas uses by default (e.g. to show record counts)
+#' @param user                         (OPTIONAL) The user name for the connection to the CDM. Only used if encryption of source credentials is enabled.
+#' @param password                     (OPTIONAL) The password for the connection to the CDM. Only used if encryption of source credentials is enabled.
 #' 
 #' @export
 buildCdmSource <- function(sourceKey, 
@@ -58,18 +60,22 @@ buildCdmSource <- function(sourceKey,
                            vocabDatabaseSchema = NULL,
                            connectionString = NULL, 
                            sourceId = NULL, 
-                           priority = 0) {
+                           priority = 0,
+                           user = NULL,
+                           password = NULL) {
   
   cdmSource <- {}
-  cdmSource$sourceId = sourceId
-  cdmSource$sourceKey = sourceKey
-  cdmSource$sourceName = sourceName
-  cdmSource$dbms = dbms
-  cdmSource$connectionString = connectionString
-  cdmSource$cdmDatabaseSchema = cdmDatabaseSchema
-  cdmSource$resultsDatabaseSchema = resultsDatabaseSchema
-  cdmSource$vocabDatabaseSchema = vocabDatabaseSchema
-  cdmSource$priority = priority
+  cdmSource$sourceId <- sourceId
+  cdmSource$sourceKey <- sourceKey
+  cdmSource$sourceName <- sourceName
+  cdmSource$dbms <- dbms
+  cdmSource$connectionString <- connectionString
+  cdmSource$cdmDatabaseSchema <- cdmDatabaseSchema
+  cdmSource$resultsDatabaseSchema <- resultsDatabaseSchema
+  cdmSource$vocabDatabaseSchema <- vocabDatabaseSchema
+  cdmSource$priority <- priority
+  cdmSource$user <- user
+  cdmSource$password <- password
   return(cdmSource)
 }
 
@@ -184,6 +190,12 @@ insertCdmSources <- function(repoConnectionDetails,
     sourceValues$source_key <- shQuote(cdmSources[[i]]$sourceKey) 
     sourceValues$source_connection <- shQuote(cdmSources[[i]]$connectionString)
     sourceValues$source_dialect <- shQuote(cdmSources[[i]]$dbms)
+    if (!is.null(cdmSources[[i]]$user) & 
+        !is.null(cdmSources[[i]]$password)) {
+     
+      sourceValues$user <- shQuote(cdmSources[[i]]$user) 
+      sourceValues$password <- shQuote(cdmSources[[i]]$password) 
+    }
     
     sql <- renderSql(sql = "INSERT INTO @ohdsiRepositorySchema.source (@columns) values (@values);",
                      ohdsiRepositorySchema = repoConnectionDetails$schema,
