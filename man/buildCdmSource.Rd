@@ -7,7 +7,7 @@
 buildCdmSource(sourceKey, sourceName = NULL, dbms = NULL,
   cdmDatabaseSchema = NULL, resultsDatabaseSchema = NULL,
   vocabDatabaseSchema = NULL, connectionString = NULL, sourceId = NULL,
-  priority = 0)
+  priority = 0, user = NULL, password = NULL)
 }
 \arguments{
 \item{sourceKey}{A unique string identifier for the data source}
@@ -32,6 +32,10 @@ source_id is obtained.}
 
 \item{priority}{1 = the source become the one Atlas uses by default (e.g. to show record counts)
 0 = the source will not become the one Atlas uses by default (e.g. to show record counts)}
+
+\item{user}{(OPTIONAL) The user name for the connection to the CDM. Only used if encryption of source credentials is enabled.}
+
+\item{password}{(OPTIONAL) The password for the connection to the CDM. Only used if encryption of source credentials is enabled.}
 }
 \value{
 A CDM source object with the necessary parameters to fulfill SOURCE and SOURCE_DAIMON
