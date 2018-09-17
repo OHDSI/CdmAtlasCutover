@@ -308,9 +308,11 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE) {
   
   sqls <- c(ddlSqls, initSqls)
   
-  #### TOTAL HACK
+  #### TODO: remove this once DDL Service is fixed in WebAPI
   
-  initHeraclesPeriods <- SqlRender::readSql("inst/sql/sql_server/init_heracles_periods.sql")
+  initHeraclesPeriods <- SqlRender::readSql(system.file("sql", "sql_server", "init_heracles_periods.sql", package = "CdmAtlasCutover"))
+  
+
   
   sqls <- c(sqls, initHeraclesPeriods)
   
