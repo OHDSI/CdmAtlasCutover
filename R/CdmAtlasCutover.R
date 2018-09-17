@@ -2,7 +2,6 @@
 #
 # Copyright 2018 Observational Health Data Sciences and Informatics
 #
-# This file is part of Achilles
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +50,7 @@
 #' @param user                         (OPTIONAL) The user name for the connection to the CDM. Only used if encryption of source credentials is enabled.
 #' @param password                     (OPTIONAL) The password for the connection to the CDM. Only used if encryption of source credentials is enabled.
 #' 
+#' @param connectionDetails            A connectionDetails object created using DatabaseConnector of this source
 #' @export
 buildCdmSource <- function(sourceKey, 
                            sourceName = NULL, 
@@ -62,7 +62,8 @@ buildCdmSource <- function(sourceKey,
                            sourceId = NULL, 
                            priority = 0,
                            user = NULL,
-                           password = NULL) {
+                           password = NULL,
+                           connectionDetails = NULL) {
   
   cdmSource <- {}
   cdmSource$sourceId <- sourceId
@@ -76,6 +77,7 @@ buildCdmSource <- function(sourceKey,
   cdmSource$priority <- priority
   cdmSource$user <- user
   cdmSource$password <- password
+  cdmSource$connectionDetails <- connectionDetails
   return(cdmSource)
 }
 
@@ -186,15 +188,15 @@ insertCdmSources <- function(repoConnectionDetails,
       sourceValues$source_id <- cdmSources[[i]]$sourceId
     }
     
-    sourceValues$source_name <- shQuote(cdmSources[[i]]$sourceName) 
-    sourceValues$source_key <- shQuote(cdmSources[[i]]$sourceKey) 
-    sourceValues$source_connection <- shQuote(cdmSources[[i]]$connectionString)
-    sourceValues$source_dialect <- shQuote(cdmSources[[i]]$dbms)
+    sourceValues$source_name <- shQuote(cdmSources[[i]]$sourceName, type = "csh") 
+    sourceValues$source_key <- shQuote(cdmSources[[i]]$sourceKey, type = "csh") 
+    sourceValues$source_connection <- shQuote(cdmSources[[i]]$connectionString, type = "csh")
+    sourceValues$source_dialect <- shQuote(cdmSources[[i]]$dbms, type = "csh")
     if (!is.null(cdmSources[[i]]$user) & 
         !is.null(cdmSources[[i]]$password)) {
      
-      sourceValues$username <- shQuote(cdmSources[[i]]$user) 
-      sourceValues$password <- shQuote(cdmSources[[i]]$password) 
+      sourceValues$username <- shQuote(cdmSources[[i]]$user, type = "csh") 
+      sourceValues$password <- shQuote(cdmSources[[i]]$password, type = "csh") 
     }
     
     sql <- renderSql(sql = "INSERT INTO @ohdsiRepositorySchema.source (@columns) values (@values);",
@@ -261,48 +263,76 @@ insertCdmSources <- function(repoConnectionDetails,
 #' none
 #'
 #' @param cdmSources             The list of databases to cut over
-#' @param connectionDetails      A connectionDetails object that can create tables in the CDM
 #' @param sqlOnly                Generate SQL only, don't execute
 #' 
 #' @export
-createOhdsiResultsTables <- function (cdmSources, connectionDetails, sqlOnly = FALSE) {
+createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE) {
   
   gitPath <- "https://api.github.com/repos/OHDSI/WebAPI/contents/src/main/resources/ddl/results"
   req <- httr::GET(gitPath)
   httr::stop_for_status(req)
   content <- httr::content(req)
   
-  ddlFiles <- content[sapply(content, function(d) d$name != "create_index.sql" & 
-                               !startsWith(d$name, "init") )]
+  ddlFiles <- content[sapply(content, function(d) {
+    d$name != "create_index.sql" & 
+    d$name != "concept_hierarchy.sql" &
+    !startsWith(d$name, "init")
+  })]
   ddlUrls <- unlist(lapply(ddlFiles, function(d) d$download_url))
   
   ddlSqls <- lapply(ddlUrls, function(url) {
+    prefix <- SqlRender::renderSql("IF OBJECT_ID('@resultsDatabaseSchema.@table', 'U') IS NULL", 
+                                 resultsDatabaseSchema = cdmSources$resultsDatabaseSchema,
+                                 table = gsub(pattern = ".sql", replacement = "", x = basename(url)))$sql
     sql <- RCurl::getURL(url,
                   ssl.verifyhost = FALSE, 
                   ssl.verifypeer =  FALSE)
-    sql <- SqlRender::renderSql(sql = sql,
-                                results_schema = cdmSource$resultsDatabaseSchema)$sql
+    if (length(grep(pattern = "IF OBJECT_ID", x = sql)) == 0) {
+      sql <- paste(prefix, sql, sep = "; \n")
+    }
+    sql
   })
   
-  initFiles <- content[sapply(content, function(d) startsWith(tolower(d$name), "init") )]
+  initFiles <- content[sapply(content, function(d) {
+    d$name != "init_concept_hierarchy.sql" & 
+      startsWith(tolower(d$name), "init") & 
+      d$name != "init_heracles_periods.sql" 
+    })]
   initUrls <- unlist(lapply(initFiles, function(d) d$download_url))
   
   initSqls <- lapply(initUrls, function(url) {
     sql <- RCurl::getURL(url,
                          ssl.verifyhost = FALSE, 
                          ssl.verifypeer =  FALSE)
-    sql <- SqlRender::renderSql(sql = sql, warnOnMissingParameters = F,
-                                results_schema = cdmSource$resultsDatabaseSchema)$sql
   })
   
   sqls <- c(ddlSqls, initSqls)
   
+  #### TOTAL HACK
+  
+  initHeraclesPeriods <- SqlRender::readSql("inst/sql/sql_server/init_heracles_periods.sql")
+  
+  sqls <- c(sqls, initHeraclesPeriods)
   
   for (cdmSource in cdmSources) {
     
     writeLines(sprintf("Creating OHDSI Results tables for %s", cdmSource$sourceKey))
     finalSql <- paste(sqls, collapse = "\n")
+    
+    
+    finalSql <- SqlRender::renderSql(sql = finalSql,
+                                results_schema = cdmSource$resultsDatabaseSchema,
+                                vocab_database_schema = cdmSource$cdmDatabaseSchema,
+                                results_database_schema = cdmSource$resultsDatabaseSchema,
+                                cdm_database_schema = cdmSource$cdmDatabaseSchema, warnOnMissingParameters = F)$sql
+    finalSql <- SqlRender::translateSql(sql = finalSql, targetDialect = cdmSource$dbms)$sql
+    
     finalSql <- gsub(pattern = "IF OBJECT_ID", replacement = "\r\nIF OBJECT_ID", x = finalSql)
+    finalSql <- gsub(pattern = "CONSTRAINT DF_heracles_results_dist_last_update DEFAULT GETDATE\\(\\)", 
+                     replacement = "", x = finalSql)
+    finalSql <- gsub(pattern = "CONSTRAINT DF_HERACLES_results_last_update DEFAULT GETDATE\\(\\)", 
+                     replacement = "", x = finalSql)
+    
     
     if (cdmSource$dbms == "pdw") {
       finalSql <- stringr::str_replace_all(finalSql, "IF XACT_STATE\\(\\) = 1 COMMIT;", "")
@@ -314,9 +344,8 @@ createOhdsiResultsTables <- function (cdmSources, connectionDetails, sqlOnly = F
                                                  sprintf("%s~create_ohdsi_results_tables.sql", 
                                                          cdmSource$sourceKey)))
     } else {
-      connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = cdmSource$dbms, 
-                                                                      connectionString = cdmSource$connectionString)
-      connection <- DatabaseConnector::connect(connectionDetails = connectionDetails)
+      
+      connection <- DatabaseConnector::connect(connectionDetails = cdmSource$connectionDetails)
       DatabaseConnector::executeSql(connection = connection, sql = finalSql)
       DatabaseConnector::disconnect(connection)
     }

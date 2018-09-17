@@ -7,7 +7,7 @@
 buildCdmSource(sourceKey, sourceName = NULL, dbms = NULL,
   cdmDatabaseSchema = NULL, resultsDatabaseSchema = NULL,
   vocabDatabaseSchema = NULL, connectionString = NULL, sourceId = NULL,
-  priority = 0, user = NULL, password = NULL)
+  priority = 0, user = NULL, password = NULL, connectionDetails = NULL)
 }
 \arguments{
 \item{sourceKey}{A unique string identifier for the data source}
@@ -36,6 +36,8 @@ source_id is obtained.}
 \item{user}{(OPTIONAL) The user name for the connection to the CDM. Only used if encryption of source credentials is enabled.}
 
 \item{password}{(OPTIONAL) The password for the connection to the CDM. Only used if encryption of source credentials is enabled.}
+
+\item{connectionDetails}{A connectionDetails object created using DatabaseConnector of this source}
 }
 \value{
 A CDM source object with the necessary parameters to fulfill SOURCE and SOURCE_DAIMON
