@@ -57,28 +57,27 @@ buildCdmSource <- function(sourceKey,
                            dbms = NULL, 
                            cdmDatabaseSchema = NULL, 
                            resultsDatabaseSchema = NULL, 
-                           vocabDatabaseSchema = NULL,
+                           vocabDatabaseSchema = cdmDatabaseSchema,
                            connectionString = NULL, 
                            sourceId = NULL, 
                            priority = 0,
                            user = NULL,
                            password = NULL,
                            connectionDetails = NULL) {
-  
-  cdmSource <- {}
-  cdmSource$sourceId <- sourceId
-  cdmSource$sourceKey <- sourceKey
-  cdmSource$sourceName <- sourceName
-  cdmSource$dbms <- dbms
-  cdmSource$connectionString <- connectionString
-  cdmSource$cdmDatabaseSchema <- cdmDatabaseSchema
-  cdmSource$resultsDatabaseSchema <- resultsDatabaseSchema
-  cdmSource$vocabDatabaseSchema <- vocabDatabaseSchema
-  cdmSource$priority <- priority
-  cdmSource$user <- user
-  cdmSource$password <- password
-  cdmSource$connectionDetails <- connectionDetails
-  return(cdmSource)
+  list(
+    sourceId = sourceId,
+    sourceKey = sourceKey,
+    sourceName = sourceName,
+    dbms = dbms,
+    connectionString = connectionString,
+    cdmDatabaseSchema = cdmDatabaseSchema,
+    resultsDatabaseSchema = resultsDatabaseSchema,
+    vocabDatabaseSchema = vocabDatabaseSchema,
+    priority = priority,
+    user = user,
+    password = password,
+    connectionDetails = connectionDetails
+  )
 }
 
 #' @title removeSources
@@ -258,98 +257,77 @@ insertCdmSources <- function(repoConnectionDetails,
 #' @author Ajit Londhe
 #'
 #' @details
-#' Creates all the OHDSI Results tables needed by Atlas
+#' Creates all the OHDSI Results tables needed by Atlas by pulling results DDL from WebAPI
 #' @return
 #' none
 #'
 #' @param cdmSources             The list of databases to cut over
+#' @param baseUrl                The base URL for the WebApi instance, for example:
+#'                               "http://api.ohdsi.org:80/WebAPI".
+#' @param initConceptHierarchy   Should the concept hierarchy be initializted?
 #' @param sqlOnly                Generate SQL only, don't execute
 #' 
 #' @export
-createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE) {
+createOhdsiResultsTables <- function (cdmSources,
+                                      baseUrl, 
+                                      initConceptHierarchy = FALSE, 
+                                      sqlOnly = FALSE) {
   
-  gitPath <- "https://api.github.com/repos/OHDSI/WebAPI/contents/src/main/resources/ddl/results"
-  req <- httr::GET(gitPath)
-  httr::stop_for_status(req)
-  content <- httr::content(req)
-  
-  ddlFiles <- content[sapply(content, function(d) {
-    d$name != "create_index.sql" & 
-    d$name != "concept_hierarchy.sql" &
-    !startsWith(d$name, "init")
-  })]
-  ddlUrls <- unlist(lapply(ddlFiles, function(d) d$download_url))
-  
-  ddlSqls <- lapply(ddlUrls, function(url) {
-    prefix <- SqlRender::renderSql("IF OBJECT_ID('@resultsDatabaseSchema.@table', 'U') IS NULL", 
-                                 resultsDatabaseSchema = cdmSources$resultsDatabaseSchema,
-                                 table = gsub(pattern = ".sql", replacement = "", x = basename(url)))$sql
-    sql <- RCurl::getURL(url,
-                  ssl.verifyhost = FALSE, 
-                  ssl.verifypeer =  FALSE)
-    if (length(grep(pattern = "IF OBJECT_ID", x = sql)) == 0) {
-      sql <- paste(prefix, sql, sep = "; \n")
-    }
-    sql
-  })
-  
-  initFiles <- content[sapply(content, function(d) {
-    d$name != "init_concept_hierarchy.sql" & 
-      startsWith(tolower(d$name), "init") & 
-      d$name != "init_heracles_periods.sql" 
-    })]
-  initUrls <- unlist(lapply(initFiles, function(d) d$download_url))
-  
-  initSqls <- lapply(initUrls, function(url) {
-    sql <- RCurl::getURL(url,
-                         ssl.verifyhost = FALSE, 
-                         ssl.verifypeer =  FALSE)
-  })
-  
-  sqls <- c(ddlSqls, initSqls)
-  
-  #### TODO: remove this once DDL Service is fixed in WebAPI
-  
-  initHeraclesPeriods <- SqlRender::readSql(system.file("sql", "sql_server", "init_heracles_periods.sql", package = "CdmAtlasCutover"))
-  
-
-  
-  sqls <- c(sqls, initHeraclesPeriods)
+  if (!.checkBaseUrl(baseUrl)) {
+    stop("Base URL not valid, should be like http://api.ohdsi.org:80/WebAPI")
+  }
   
   for (cdmSource in cdmSources) {
+  
+    url <- sprintf("%1s/ddl/results?initConceptHierarchy=%2s", baseUrl, ifelse(initConceptHierarchy, "true", "false"))
+    req <- httr::GET(url)
+    httr::stop_for_status(req)
+    sql <- httr::content(x = req, encoding = "UTF-8")
     
-    writeLines(sprintf("Creating OHDSI Results tables for %s", cdmSource$sourceKey))
-    finalSql <- paste(sqls, collapse = "\n")
+    sql <- SqlRender::render(sql = sql,  warnOnMissingParameters = FALSE,
+                             results_schema = cdmSource$resultsDatabaseSchema,
+                             vocab_schema = cdmSource$vocabDatabaseSchema,
+                             results_schema = cdmSource$resultsDatabaseSchema,
+                             results_database_schema = cdmSource$resultsDatabaseSchema)
     
-    
-    finalSql <- SqlRender::renderSql(sql = finalSql,
-                                results_schema = cdmSource$resultsDatabaseSchema,
-                                vocab_database_schema = cdmSource$cdmDatabaseSchema,
-                                results_database_schema = cdmSource$resultsDatabaseSchema,
-                                cdm_database_schema = cdmSource$cdmDatabaseSchema, warnOnMissingParameters = F)$sql
-    finalSql <- SqlRender::translateSql(sql = finalSql, targetDialect = cdmSource$dbms)$sql
-    
-    finalSql <- gsub(pattern = "IF OBJECT_ID", replacement = "\r\nIF OBJECT_ID", x = finalSql)
-    finalSql <- gsub(pattern = "CONSTRAINT DF_heracles_results_dist_last_update DEFAULT GETDATE\\(\\)", 
-                     replacement = "", x = finalSql)
-    finalSql <- gsub(pattern = "CONSTRAINT DF_HERACLES_results_last_update DEFAULT GETDATE\\(\\)", 
-                     replacement = "", x = finalSql)
-    
-    
-    if (cdmSource$dbms == "pdw") {
-      finalSql <- stringr::str_replace_all(finalSql, "IF XACT_STATE\\(\\) = 1 COMMIT;", "")
+    if (initConceptHierarchy) {
+      sql <- c(SqlRender::render("IF OBJECT_ID('@resultsDatabaseSchema.concept_hierarchy', 'U') IS NOT NULL truncate table @resultsDatabaseSchema.concept_hierarchy;",
+                                 resultsDatabaseSchema = cdmSource$resultsDatabaseSchema),
+               sql)
+      sql <- paste(sql, collapse = "\n\n")
     }
+    
+    # short-circuit the index creation to wrap in try statements -----------------------------------
+    
+    indexes <- read.csv(file = system.file("csv", "resultsTableIndexes.csv", package = "CdmAtlasCutover"), header = TRUE, as.is = TRUE, stringsAsFactors = FALSE)
+
+    indexSqls <- lapply(indexes$SQL, function(s) {
+      indexSql <- SqlRender::render(sql = s, resultsDatabaseSchema = cdmSource$resultsDatabaseSchema)
+      indexSql <- SqlRender::translate(sql = indexSql, targetDialect = cdmSource$dbms)
+      indexSql
+    })
+    
+    sql <- gsub(pattern = "CREATE INDEX ", replacement = "--CREATE INDEX ", x = sql,ignore.case = TRUE)
+    
+    sql <- SqlRender::translate(sql = sql,
+                                targetDialect = cdmSource$dbms)
+    
     if (sqlOnly) {
       if (!dir.exists("output")) { dir.create("output") }
-      SqlRender::writeSql(sql = finalSql, 
+      sql <- c(sql, paste(indexSqls, collapse = "\n\n"))
+      sql <- paste(sql, collapse = "\n\n")
+      SqlRender::writeSql(sql = sql, 
                           targetFile = file.path("output", 
                                                  sprintf("%s~create_ohdsi_results_tables.sql", 
                                                          cdmSource$sourceKey)))
     } else {
-      
       connection <- DatabaseConnector::connect(connectionDetails = cdmSource$connectionDetails)
-      DatabaseConnector::executeSql(connection = connection, sql = finalSql)
-      DatabaseConnector::disconnect(connection)
+      on.exit(DatabaseConnector::disconnect(connection = connection))
+      
+      DatabaseConnector::executeSql(connection = connection, sql = sql)
+      for (indexSql in indexSqls) {
+        try(DatabaseConnector::executeSql(connection = connection, sql = indexSql), silent = TRUE)
+      }
     }
   }
 }
@@ -368,17 +346,7 @@ createOhdsiResultsTables <- function (cdmSources, sqlOnly = FALSE) {
 #' 
 #' @export
 refreshAtlasSources <- function (baseUrl) {
-  .checkBaseUrl <- function(baseUrl) {
-    patterns <- list("https?:\\/\\/[a-z0-9]+([\\-\\.]{1}[a-z0-9]+)*\\.[a-z]{2,5}(:[0-9]{1,5})+(\\/.*)?\\/WebAPI$",
-                     "https?:\\/\\/(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(:[0-9]{1,5})+(\\/.*)?\\/WebAPI$")
-    results <- lapply(patterns, function(p) {
-      result <- grepl(pattern = p, 
-                      x = baseUrl, 
-                      ignore.case = FALSE)
-    })
-    return(any(as.logical(results)))
-  }
-  
+
   if (!.checkBaseUrl(baseUrl)) {
     stop("Base URL not valid, should be like http://api.ohdsi.org:80/WebAPI")
   }
@@ -389,7 +357,19 @@ refreshAtlasSources <- function (baseUrl) {
     req <- httr::GET(url)
     httr::stop_for_status(req)
     writeLines("Atlas sources refreshed")
+    warning("In order to refresh the vocabulary caches in WebAPI, it is recommended you restart Tomcat")
   }, error = function(err) {
     writeLines("Unable to refresh Atlas sources")
   })
+}
+
+.checkBaseUrl <- function(baseUrl) {
+  patterns <- list("https?:\\/\\/[a-z0-9]+([\\-\\.]{1}[a-z0-9]+)*\\.[a-z]{2,5}(:[0-9]{1,5})+(\\/.*)?\\/WebAPI$",
+                   "https?:\\/\\/(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(:[0-9]{1,5})+(\\/.*)?\\/WebAPI$")
+  results <- lapply(patterns, function(p) {
+    result <- grepl(pattern = p, 
+                    x = baseUrl, 
+                    ignore.case = FALSE)
+  })
+  return(any(as.logical(results)))
 }

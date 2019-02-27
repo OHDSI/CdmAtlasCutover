@@ -1,19 +1,20 @@
 Package: CdmAtlasCutover
 Type: Package
 Title: A package to prepare CDM databases for usage in Atlas/WebAPI
-Version: 1.10.5
-Date: 2018-08-13
+Version: 1.10.6
+Date: 2019-02-27
 Author: Ajit Londhe
 Maintainer: Ajit Londhe <alondhe2@its.jnj.com>
 Description: A package to prepare CDM databases for usage in Atlas by ensuring all cohort results, features, Heracles, and IR tables are created
   in the OHDSI Repository Schema. Can also clear Atlas cohort results for a particular CDM source.
 Depends:
-    SqlRender,
-    DatabaseConnector,
+    SqlRender (>= 1.6.0),
+    DatabaseConnector (>= 2.0.0)
+Imports:
     stringr,
     httr,
     RCurl
 License: Apache License
 Suggests:
     testthat
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.1

@@ -4,18 +4,27 @@
 \alias{createOhdsiResultsTables}
 \title{createOhdsiResultsTables}
 \usage{
-createOhdsiResultsTables(cdmSources, sqlOnly = FALSE)
+createOhdsiResultsTables(cdmSources, baseUrl,
+  initConceptHierarchy = FALSE, sqlOnly = FALSE)
 }
 \arguments{
 \item{cdmSources}{The list of databases to cut over}
+
+\item{baseUrl}{The base URL for the WebApi instance, for example:
+"http://api.ohdsi.org:80/WebAPI".}
+
+\item{initConceptHierarchy}{Should the concept hierarchy be initializted?}
 
 \item{sqlOnly}{Generate SQL only, don't execute}
 }
 \value{
 none
 }
+\description{
+createOhdsiResultsTables
+}
 \details{
-Creates all the OHDSI Results tables needed by Atlas
+Creates all the OHDSI Results tables needed by Atlas by pulling results DDL from WebAPI
 }
 \author{
 Ajit Londhe

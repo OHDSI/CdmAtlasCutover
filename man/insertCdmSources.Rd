@@ -18,6 +18,9 @@ insertCdmSources(repoConnectionDetails, cdmSources, sourceIdx = FALSE,
 
 \item{sqlOnly}{Generate SQL only, don't execute}
 }
+\description{
+insertCdmSources
+}
 \details{
 Inserts CDM sources into OHDSI Repository. Creates new records in SOURCE and associated records in SOURCE_DAIMON.
 As these tables may have identity indexes, boolean settings can be used to tell the function to skip instantiating new IDs.

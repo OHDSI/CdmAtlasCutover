@@ -13,6 +13,9 @@ removeCdmSources(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
 
 \item{sqlOnly}{Generate SQL only, don't execute}
 }
+\description{
+removeSources
+}
 \details{
 Removes CDM sources and their cohort results from OHDSI Repository. Sources are removed
 from the SOURCE and SOURCE_DAIMON table, and cohort results for those sources are cleared.

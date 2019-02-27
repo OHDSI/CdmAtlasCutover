@@ -6,8 +6,9 @@
 \usage{
 buildCdmSource(sourceKey, sourceName = NULL, dbms = NULL,
   cdmDatabaseSchema = NULL, resultsDatabaseSchema = NULL,
-  vocabDatabaseSchema = NULL, connectionString = NULL, sourceId = NULL,
-  priority = 0, user = NULL, password = NULL, connectionDetails = NULL)
+  vocabDatabaseSchema = cdmDatabaseSchema, connectionString = NULL,
+  sourceId = NULL, priority = 0, user = NULL, password = NULL,
+  connectionDetails = NULL)
 }
 \arguments{
 \item{sourceKey}{A unique string identifier for the data source}
@@ -41,6 +42,9 @@ source_id is obtained.}
 }
 \value{
 A CDM source object with the necessary parameters to fulfill SOURCE and SOURCE_DAIMON
+}
+\description{
+buildCdmSource
 }
 \details{
 Creates a CDM source object for use in the package with necessary connection information.
