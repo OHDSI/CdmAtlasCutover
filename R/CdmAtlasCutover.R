@@ -1,6 +1,6 @@
 # @file CdmAtlasCutover
 #
-# Copyright 2018 Observational Health Data Sciences and Informatics
+# Copyright 2019 Observational Health Data Sciences and Informatics
 #
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -372,4 +372,60 @@ refreshAtlasSources <- function (baseUrl) {
                     ignore.case = FALSE)
   })
   return(any(as.logical(results)))
+}
+
+
+#' Creates network level CDM source for Atlas
+#' 
+#' @param cdmSources                 The list of databases to cut over
+#' @param networkConnectionDetails   A connectionDetails object for the network source
+#' @param networkDatabaseSchema      The fully qualified name of the schema that will serve as the Network Source in Atlas
+#' 
+#' @export
+createNetworkSource <- function(cdmSources,
+                                networkConnectionDetails,
+                                networkDatabaseSchema) {
+  
+  achillesTypes <- data.frame(
+    tableName = c("achilles_results", "achilles_results_dist"),
+    distribution = c(0, 1)
+  )
+  
+  analysisIds <- Achilles::getAnalysisDetails()
+  
+  sqls <- apply(achillesTypes, 1, function(achillesType) {
+
+    analysisIds <- analysisIds$ANALYSIS_ID[analysisIds$DISTRIBUTION == as.integer(achillesType["distribution"][[1]])]
+    
+    analysisIds <- lapply(analysisIds, function(a) {
+      sprintf("select %d as analysis_id", a)
+    })
+    
+    analysisIds <- paste(analysisIds, collapse = " \nunion all\n ")
+    
+    sqlUnions <- lapply(cdmSources, function(s) {
+      sql <- SqlRender::render("select * from @resultsDatabaseSchema.@achillesTable 
+                               where analysis_id in (select analysis_id from count_analyses)",
+                               resultsDatabaseSchema = s$resultsDatabaseSchema,
+                               achillesTable = achillesType["tableName"][[1]])
+      sql <- SqlRender::translate(sql = sql, targetDialect = networkConnectionDetails$dbms)
+    })
+    sqlUnions <- paste(sqlUnions, collapse = " \nunion all\n ")
+    
+    sqlFileName <- SqlRender::snakeCaseToCamelCase(sprintf("network%s.sql", achillesType["tableName"][[1]]))
+  
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = sqlFileName,
+                                              packageName = "CdmAtlasCutover", 
+                                              dbms = networkConnectionDetails$dbms,
+                                              networkDatabaseSchema = networkDatabaseSchema,
+                                              analysisIds = analysisIds,
+                                              sqlUnions = sqlUnions)
+  })
+  
+  connection <- DatabaseConnector::connect(connectionDetails = networkConnectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection = connection))
+  
+  for (sql in sqls) {
+    DatabaseConnector::executeSql(connection = connection, sql = sql)
+  }
 }
