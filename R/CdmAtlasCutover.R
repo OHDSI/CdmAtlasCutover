@@ -89,16 +89,20 @@ buildCdmSource <- function(sourceKey,
 #'
 #' @param repoConnectionDetails     A ConnectionDetails object for the OHDSI Repository
 #' @param cdmSources                A list of CDM sources, built using CDM source object from \code{\link{buildCdmSource}}
+#' @param softRemove                If TRUE, don't drop the rows, but soft remove the source. Otherwise, drop the source rows
 #' @param sqlOnly                   Generate SQL only, don't execute
 #' 
 #' @export
-removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE) {
+removeCdmSources <- function(repoConnectionDetails, 
+                             cdmSources, 
+                             softRemove = FALSE,
+                             sqlOnly = FALSE) {
   
   sourceKeys <- sapply(cdmSources, function(cdmSource) { sourceKey <- cdmSource$sourceKey })
   sqls <- c()
-  sql <- SqlRender::renderSql(sql = "select source_id from @ohdsiRepositorySchema.source where source_key in (@sourceKeys);", 
+  sql <- SqlRender::render(sql = "select source_id from @ohdsiRepositorySchema.source where source_key in (@sourceKeys);", 
                            ohdsiRepositorySchema = repoConnectionDetails$schema, 
-                           sourceKeys = paste0(sprintf("'%s'", sourceKeys), collapse = ","))$sql 
+                           sourceKeys = paste0(sprintf("'%s'", sourceKeys), collapse = ","))
   connection <- DatabaseConnector::connect(repoConnectionDetails)
   sourceIds <- DatabaseConnector::querySql(connection = connection, sql = sql)
 
@@ -106,20 +110,28 @@ removeCdmSources <- function(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
     stop("No matching CDM sources found")
   }
   
-  sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "ohdsi_repo_deletes.sql", 
-                                           packageName = "CdmAtlasCutover", 
-                                           dbms = repoConnectionDetails$dbms,
-                                           ohdsiRepositorySchema = repoConnectionDetails$schema, 
-                                           sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
-  sqls <- c(sqls, sql)
-
-  sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "remove_sources.sql", 
-                                           packageName = "CdmAtlasCutover", 
-                                           dbms = repoConnectionDetails$dbms,
-                                           ohdsiRepositorySchema = repoConnectionDetails$schema,
-                                           sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
-
-  sqls <- c(sqls, sql)
+  if (softRemove) {
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "softRemoveSource.sql", 
+                                             packageName = "CdmAtlasCutover", 
+                                             dbms = repoConnectionDetails$dbms,
+                                             ohdsiRepositorySchema = repoConnectionDetails$schema,
+                                             sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))  
+    sqls <- c(sqls, sql)
+  } else {
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "ohdsi_repo_deletes.sql", 
+                                             packageName = "CdmAtlasCutover", 
+                                             dbms = repoConnectionDetails$dbms,
+                                             ohdsiRepositorySchema = repoConnectionDetails$schema, 
+                                             sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))
+    sqls <- c(sqls, sql)
+    
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "remove_sources.sql", 
+                                             packageName = "CdmAtlasCutover", 
+                                             dbms = repoConnectionDetails$dbms,
+                                             ohdsiRepositorySchema = repoConnectionDetails$schema,
+                                             sourceIds = paste(sourceIds$SOURCE_ID, collapse = ","))  
+    sqls <- c(sqls, sql)
+  }
   
   if (sqlOnly) {
     if (!dir.exists("output")) { dir.create("output") }
@@ -159,8 +171,8 @@ insertCdmSources <- function(repoConnectionDetails,
   
   getMaxId <- function(repoConnectionDetails, prefix) {
     
-    sql <- SqlRender::renderSql(sql = "select max(@prefix_id) from @ohdsiRepositorySchema.@prefix;", 
-                     ohdsiRepositorySchema = repoConnectionDetails$schema, prefix = prefix)$sql 
+    sql <- SqlRender::render(sql = "select max(@prefix_id) from @ohdsiRepositorySchema.@prefix;", 
+                     ohdsiRepositorySchema = repoConnectionDetails$schema, prefix = prefix)
     connection <- DatabaseConnector::connect(repoConnectionDetails)
     newId <- as.numeric(DatabaseConnector::querySql(connection = connection, sql = sql))
     return(newId)
@@ -198,10 +210,10 @@ insertCdmSources <- function(repoConnectionDetails,
       sourceValues$password <- shQuote(cdmSources[[i]]$password, type = "csh") 
     }
     
-    sql <- renderSql(sql = "INSERT INTO @ohdsiRepositorySchema.source (@columns) values (@values);",
+    sql <- SqlRender::render(sql = "INSERT INTO @ohdsiRepositorySchema.source (@columns) values (@values);",
                      ohdsiRepositorySchema = repoConnectionDetails$schema,
                      columns = paste0(names(sourceValues), collapse = ","),
-                     values = paste0(sourceValues, collapse = ","))$sql
+                     values = paste0(sourceValues, collapse = ","))
     
     sqls <- c(sqls, sql)
     
@@ -231,12 +243,12 @@ insertCdmSources <- function(repoConnectionDetails,
         }
       }
       
-      sql <- renderSql(sql = "INSERT INTO @ohdsiRepositorySchema.source_daimon (@columns) 
+      sql <- SqlRender::render(sql = "INSERT INTO @ohdsiRepositorySchema.source_daimon (@columns) 
                               select source_id, @values from @ohdsiRepositorySchema.source where source_key = '@sourceKey';",
                        ohdsiRepositorySchema = repoConnectionDetails$schema,
                        columns = paste('source_id', paste0(names(daimonValues), collapse = ","), sep = ","),
                        values = paste0(daimonValues, collapse = ","),
-                       sourceKey = cdmSources[[i]]$sourceKey)$sql
+                       sourceKey = cdmSources[[i]]$sourceKey)
       
       sqls <- c(sqls, sql)
     }
@@ -247,8 +259,8 @@ insertCdmSources <- function(repoConnectionDetails,
     if (!dir.exists("output")) { dir.create("output") }
     SqlRender::writeSql(sql = paste(sqls, collapse = "\n\n"), targetFile = paste("output", "insert_cdm_sources.sql", sep = "/"))
   } else {
-    connection <- connect(repoConnectionDetails)
-    executeSql(connection = connection, sql = paste(sqls, collapse = "\n\n"))  
+    connection <- DatabaseConnector::connect(connectionDetails = repoConnectionDetails)
+    DatabaseConnector::executeSql(connection = connection, sql = paste(sqls, collapse = "\n\n"))  
     DatabaseConnector::disconnect(connection)
   }
 }
@@ -429,3 +441,58 @@ createNetworkSource <- function(cdmSources,
     DatabaseConnector::executeSql(connection = connection, sql = sql)
   }
 }
+
+#' Rename the source key of an existing source
+#' 
+#' @param oldSourceKey              The name of the old source key
+#' @param newSourceKey              The new name of the source key
+#' @param repoConnectionDetails     A ConnectionDetails object for the OHDSI Repository
+#' @param sqlOnly                   Generate SQL only, don't execute
+#' 
+#' @export
+renameSourceKey <- function(oldSourceKey, 
+                            newSourceKey,
+                            repoConnectionDetails,
+                            sqlOnly) {
+  sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "renameSourceKey.sql",
+                                           packageName = "CdmAtlasCutover",
+                                           dbms = repoConnectionDetails$dbms,
+                                           ohdsiRepositorySchema = repoConnectionDetails$schema,
+                                           oldSourceKey = oldSourceKey,
+                                           newSourceKey = newSourceKey)
+  
+  if (sqlOnly) {
+    if (!dir.exists("output")) { dir.create("output") }
+    SqlRender::writeSql(sql = sql, 
+                        targetFile = file.path("output", 
+                                               sprintf("%s~renameSourceKey.sql", 
+                                                       oldSourceKey)))
+  } else {
+    connection <- DatabaseConnector::connect(connectionDetails = repoConnectionDetails)
+    on.exit(DatabaseConnector::disconnect(connection = connection))
+    DatabaseConnector::executeSql(connection = connection, sql = sql)  
+  }
+}
+
+
+# getActiveSourceDf <- function(baseUrl) {
+#   url <- sprintf("%s/source/sources", baseUrl)
+#   req <- httr::GET(url)
+#   httr::stop_for_status(req)
+#   response <- httr::content(x = req, encoding = "UTF-8")
+#   
+#   # sources <- lapply(response, function(r) {
+#   #   list(sourceKey = r$sourceKey, r$daimons[[3]]$tableQualifier)
+#   # })
+#   
+#   pivot <- lapply(response, function(x) {
+#     x[sapply(x, is.null)] <- NA
+#     unlist(x)
+#   })
+#   
+#   df <- do.call("rbind.fill", lapply(pivot, as.data.frame))
+# }
+
+
+
+

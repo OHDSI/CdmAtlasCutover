@@ -4,12 +4,15 @@
 \alias{removeCdmSources}
 \title{removeSources}
 \usage{
-removeCdmSources(repoConnectionDetails, cdmSources, sqlOnly = FALSE)
+removeCdmSources(repoConnectionDetails, cdmSources, softRemove = FALSE,
+  sqlOnly = FALSE)
 }
 \arguments{
 \item{repoConnectionDetails}{A ConnectionDetails object for the OHDSI Repository}
 
 \item{cdmSources}{A list of CDM sources, built using CDM source object from \code{\link{buildCdmSource}}}
+
+\item{softRemove}{If TRUE, don't drop the rows, but soft remove the source. Otherwise, drop the source rows}
 
 \item{sqlOnly}{Generate SQL only, don't execute}
 }
