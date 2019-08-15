@@ -219,38 +219,39 @@ insertCdmSources <- function(repoConnectionDetails,
     
     maxDaimonId <- ((i * 3) + getMaxId(repoConnectionDetails, "source_daimon") - 2)
     
-    for (daimonType in c(0:2)) {
+    daimonTypes <- list(
+      list(name = "cdmDatabaseSchema", id = 0),
+      list(name = "vocabDatabaseSchema", id = 1),
+      list(name = "resultsDatabaseSchema", id = 2)
+    )
+    
+    for (daimonType in daimonTypes) {
+      if (!is.na(cdmSources[[i]][daimonType$name])) {
       
-      daimonValues <- {}
-      if (!daimonIdx){
-        daimonValues$source_daimon_id <- paste0(maxDaimonId + daimonType, " as source_daimon_id")
-      }
-      daimonValues$priority <- paste0(0, ' as priority')
-      daimonValues$daimon_type <- paste0(daimonType,' as daimon_type')
-      
-      if (daimonType == 0) {
-        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$cdmDatabaseSchema, "' as varchar(255)) as table_qualifier")
-      }
-      else if (daimonType == 1) {
-        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$vocabDatabaseSchema, "' as varchar(255)) as table_qualifier")
-      }
-      else {
-        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]]$resultsDatabaseSchema, "' as varchar(255)) as table_qualifier")
+        daimonValues <- {}
+        if (!daimonIdx){
+          daimonValues$source_daimon_id <- paste0(maxDaimonId + daimonType$id, " as source_daimon_id")
+        }
+        daimonValues$priority <- paste0(0, ' as priority')
+        daimonValues$daimon_type <- paste0(daimonType$id,' as daimon_type')
         
-        if (cdmSources[[i]]$priority == 1) {
-          daimonValues$priority <- paste0(1, ' as priority')
+        
+        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]][daimonType$name], "' as varchar(255)) as table_qualifier")
+        
+        if (cdmSources[[i]]$priority >= 1) {
+          daimonValues$priority <- paste0(cdmSources[[i]]$priority, ' as priority')
           updateDaimonPriority(sqls = sqls, repoConnectionDetails = repoConnectionDetails, cdmSource = cdmSources[[i]])
         }
+        
+        sql <- SqlRender::render(sql = "INSERT INTO @ohdsiRepositorySchema.source_daimon (@columns) 
+                                select source_id, @values from @ohdsiRepositorySchema.source where source_key = '@sourceKey';",
+                         ohdsiRepositorySchema = repoConnectionDetails$schema,
+                         columns = paste('source_id', paste0(names(daimonValues), collapse = ","), sep = ","),
+                         values = paste0(daimonValues, collapse = ","),
+                         sourceKey = cdmSources[[i]]$sourceKey)
+        
+        sqls <- c(sqls, sql)
       }
-      
-      sql <- SqlRender::render(sql = "INSERT INTO @ohdsiRepositorySchema.source_daimon (@columns) 
-                              select source_id, @values from @ohdsiRepositorySchema.source where source_key = '@sourceKey';",
-                       ohdsiRepositorySchema = repoConnectionDetails$schema,
-                       columns = paste('source_id', paste0(names(daimonValues), collapse = ","), sep = ","),
-                       values = paste0(daimonValues, collapse = ","),
-                       sourceKey = cdmSources[[i]]$sourceKey)
-      
-      sqls <- c(sqls, sql)
     }
   }
   
@@ -435,6 +436,19 @@ createNetworkSource <- function(cdmSources,
   })
   
   connection <- DatabaseConnector::connect(connectionDetails = networkConnectionDetails)
+  
+  tableNames <- DatabaseConnector::getTableNames(connection = connection, databaseSchema = networkDatabaseSchema)
+  if (!"achilles_analysis" %in% tolower(tableNames)) {
+    analysisDetails <- Achilles::getAnalysisDetails()
+    DatabaseConnector::insertTable(connection = connection,
+                                   tableName = sprintf("%s.achilles_analysis", 
+                                                       networkDatabaseSchema),
+                                   data = analysisDetails,
+                                   dropTableIfExists = TRUE,
+                                   createTable = TRUE,
+                                   tempTable = FALSE)
+  }
+  
   on.exit(DatabaseConnector::disconnect(connection = connection))
   
   for (sql in sqls) {
