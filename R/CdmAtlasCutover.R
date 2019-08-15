@@ -226,7 +226,7 @@ insertCdmSources <- function(repoConnectionDetails,
     )
     
     for (daimonType in daimonTypes) {
-      if (!is.na(cdmSources[[i]][daimonType$name])) {
+      if (!is.null(cdmSources[[i]][daimonType$name][[1]])) {
       
         daimonValues <- {}
         if (!daimonIdx){
@@ -236,7 +236,7 @@ insertCdmSources <- function(repoConnectionDetails,
         daimonValues$daimon_type <- paste0(daimonType$id,' as daimon_type')
         
         
-        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]][daimonType$name], "' as varchar(255)) as table_qualifier")
+        daimonValues$table_qualifier <- paste0("cast('", cdmSources[[i]][daimonType$name][[1]], "' as varchar(255)) as table_qualifier")
         
         if (cdmSources[[i]]$priority >= 1) {
           daimonValues$priority <- paste0(cdmSources[[i]]$priority, ' as priority')
