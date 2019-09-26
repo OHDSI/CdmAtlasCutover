@@ -439,14 +439,14 @@ createNetworkSource <- function(cdmSources,
   
   tableNames <- DatabaseConnector::getTableNames(connection = connection, databaseSchema = networkDatabaseSchema)
   if (!"achilles_analysis" %in% tolower(tableNames)) {
-    analysisDetails <- Achilles::getAnalysisDetails()
-    DatabaseConnector::insertTable(connection = connection,
-                                   tableName = sprintf("%s.achilles_analysis", 
-                                                       networkDatabaseSchema),
-                                   data = analysisDetails,
-                                   dropTableIfExists = TRUE,
-                                   createTable = TRUE,
-                                   tempTable = FALSE)
+    
+    sql <- SqlRender::render("select * into @networkDatabaseSchema.achilles_analysis 
+                             from select * from @firstDatabaseSchema.achilles_analysis;",
+                             networkDatabaseSchema = networkDatabaseSchema,
+                             firstDatabaseSchema = cdmSources[[1]]$resultsDatabaseSchema)
+    sql <- SqlRender::translate(sql = sql, targetDialect = networkConnectionDetails$dbms)
+    
+    DatabaseConnector::executeSql(connection = connection, sql = sql)
   }
   
   on.exit(DatabaseConnector::disconnect(connection = connection))
